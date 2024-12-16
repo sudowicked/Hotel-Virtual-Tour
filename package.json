@@ -8,7 +8,7 @@
     "predeploy": "npm run build",
     "dev": "vite",
     "build": "vite build",
-    "deploy": "gh-pages -d dist"
+    "deploy": "gh-pages -d app"
   },
   "author": "",
   "license": "ISC",
