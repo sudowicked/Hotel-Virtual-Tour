@@ -12,15 +12,15 @@ import { TextGeometry } from 'three/examples/jsm/Addons.js';
 const textureLoader = new THREE.TextureLoader();
 const cubeTextureLoader = new THREE.CubeTextureLoader();
 
-const doorColor = textureLoader.load('/textures/door/color.jpg');
-const doorAlpha = textureLoader.load('/textures/door/alpha.jpg');
-const doorAmbient = textureLoader.load('/textures/door/ambientOcclusion.jpg');
-const doorHeight = textureLoader.load('/textures/door/height.jpg');
-const doorNormal = textureLoader.load('/textures/door/normal.jpg');
-const doorMetalness = textureLoader.load('/textures/door/metalness.jpg');
-const doorRoughness = textureLoader.load('/textures/door/roughness.jpg');
-const matcapTexture = textureLoader.load('/textures/matcaps/7.png');
-const gradientTexture = textureLoader.load('/textures/3.png');
+const doorColor = textureLoader.load('./textures/door/color.jpg');
+const doorAlpha = textureLoader.load('./textures/door/alpha.jpg');
+const doorAmbient = textureLoader.load('./textures/door/ambientOcclusion.jpg');
+const doorHeight = textureLoader.load('./textures/door/height.jpg');
+const doorNormal = textureLoader.load('./textures/door/normal.jpg');
+const doorMetalness = textureLoader.load('./textures/door/metalness.jpg');
+const doorRoughness = textureLoader.load('./textures/door/roughness.jpg');
+const matcapTexture = textureLoader.load('./textures/matcaps/7.png');
+const gradientTexture = textureLoader.load('./textures/3.png');
 
 doorColor.generateMipmaps = false;
 doorColor.minFilter = THREE.NearestFilter;
@@ -30,12 +30,12 @@ matcapTexture.minFilter = THREE.NearestFilter;
 matcapTexture.magFilter = THREE.NearestFilter;
 
 const environmentMapTexture = cubeTextureLoader.load([
-    '/textures/environmentMaps/0/nx.jpg',
-    '/textures/environmentMaps/0/px.jpg',
-    '/textures/environmentMaps/0/ny.jpg',
-    '/textures/environmentMaps/0/py.jpg',
-    '/textures/environmentMaps/0/nz.jpg',
-    '/textures/environmentMaps/0/pz.jpg',
+    './textures/environmentMaps/0/nx.jpg',
+    './textures/environmentMaps/0/px.jpg',
+    './textures/environmentMaps/0/ny.jpg',
+    './textures/environmentMaps/0/py.jpg',
+    './textures/environmentMaps/0/nz.jpg',
+    './textures/environmentMaps/0/pz.jpg',
 ])
 
 const scene = new THREE.Scene();
@@ -86,7 +86,7 @@ material.side = THREE.DoubleSide;
 const fontLoader = new FontLoader();
 
 fontLoader.load(
-    '/fonts/helvetiker_regular.typeface.json',
+    './fonts/helvetiker_regular.typeface.json',
     (font) => {
         const textGeometry = new TextGeometry('ShitSkata', {
             font:font,
