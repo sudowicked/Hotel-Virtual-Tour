@@ -85,6 +85,8 @@ material.side = THREE.DoubleSide;
  */
 const fontLoader = new FontLoader();
 
+const doughnhuts = [];
+const textMesh = new THREE.Mesh();
 fontLoader.load(
     './fonts/helvetiker_regular.typeface.json',
     (font) => {
@@ -103,7 +105,9 @@ fontLoader.load(
         textGeometry.center();
         const textMaterial = new THREE.MeshMatcapMaterial({matcap: matcapTexture});
         // textMaterial.wireframe = true;
-        const textMesh = new THREE.Mesh(textGeometry, textMaterial);
+        // textMesh = new THREE.Mesh(textGeometry, textMaterial);
+        textMesh.geometry = textGeometry;
+        textMesh.material = textMaterial;
         scene.add(textMesh);
 
 
@@ -121,6 +125,7 @@ fontLoader.load(
             dougnhutMesh.scale.set(scale, scale, scale);
 
             scene.add(dougnhutMesh);
+            doughnhuts.push(dougnhutMesh);
         }
 
     }
@@ -154,9 +159,9 @@ const parameters = {
 /**
  * Debug
  */
-const gui = new dat.GUI()
+/* const gui = new dat.GUI();
 gui.add(material, 'roughness').min(0).max(1).step(.0001);
-gui.add(material, 'metalness').min(0).max(1).step(.0001);
+gui.add(material, 'metalness').min(0).max(1).step(.0001); */
 
 const sizes = {
     width: window.innerWidth,
@@ -227,6 +232,14 @@ function tick() {
     const elapsedTime = clock.getElapsedTime()*.5;
 
     controls.update();
+    
+    doughnhuts.forEach((doughnut) => {
+        doughnut.rotation.x = elapsedTime ;
+        doughnut.rotation.y = elapsedTime * .9;
+    });
+
+    textMesh.position.x = Math.sin(elapsedTime);
+    textMesh.position.y = Math.cos(elapsedTime);
 
 /*     sphere.rotation.x = elapsedTime * .5;
     sphere.rotation.y = elapsedTime * .3;
