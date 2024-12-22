@@ -171,10 +171,6 @@ const doorLight = new THREE.PointLight(0xDF6D6D, .5, 7);
 doorLight.position.set(0, 2.3, 2.2);
 house.add(doorLight);
 
-const camera = new THREE.PerspectiveCamera(75, sizes.width/sizes.height, .1, 100);
-camera.position.set(1.5, 2, 4.5);
-scene.add(camera);
-
 window.addEventListener('resize', () => {
     // Update sizes 
     sizes.width = window.innerWidth;
@@ -202,6 +198,13 @@ const sizes = {
     width: window.innerWidth,
     height: window.innerHeight
 };
+
+/**
+ * Camera
+ */
+const camera = new THREE.PerspectiveCamera(75, sizes.width/sizes.height, .1, 100);
+camera.position.set(1.5, 2, 4.5);
+scene.add(camera);
 
 /**
  * Renderer
