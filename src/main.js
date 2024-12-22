@@ -2,15 +2,12 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/Addons.js';
 import * as dat from 'lil-gui'
 import {gsap} from 'gsap'
-import { FontLoader } from 'three/examples/jsm/Addons.js';
-import { TextGeometry } from 'three/examples/jsm/Addons.js';
-
+import { RectAreaLightHelper } from 'three/examples/jsm/Addons.js';
 
 /**
  * Textures
  */
 const textureLoader = new THREE.TextureLoader();
-const cubeTextureLoader = new THREE.CubeTextureLoader();
 
 const doorColor = textureLoader.load('./textures/door/color.jpg');
 const doorAlpha = textureLoader.load('./textures/door/alpha.jpg');
@@ -19,167 +16,163 @@ const doorHeight = textureLoader.load('./textures/door/height.jpg');
 const doorNormal = textureLoader.load('./textures/door/normal.jpg');
 const doorMetalness = textureLoader.load('./textures/door/metalness.jpg');
 const doorRoughness = textureLoader.load('./textures/door/roughness.jpg');
-const matcapTexture = textureLoader.load('./textures/matcaps/7.png');
-const gradientTexture = textureLoader.load('./textures/3.png');
+
+const brickColor = textureLoader.load('./textures/bricks/color.jpg');
+const brickAmbient = textureLoader.load('./textures/bricks/ambientOcclusion.jpg');
+const brickNormal = textureLoader.load('./textures/bricks/normal.jpg');
+const brickRoughness = textureLoader.load('./textures/bricks/roughness.jpg');
+
+const grassColor = textureLoader.load('./textures/grass/color.jpg');
+const grassAmbient = textureLoader.load('./textures/grass/ambientOcclusion.jpg');
+const grassNormal = textureLoader.load('./textures/grass/normal.jpg');
+const grassRoughness = textureLoader.load('./textures/grass/roughness.jpg');
+
+grassColor.repeat.set(8, 8);
+grassAmbient.repeat.set(8, 8);
+grassNormal.repeat.set(8, 8);
+grassRoughness.repeat.set(8, 8);
+
+grassColor.wrapS = THREE.RepeatWrapping;
+grassAmbient.wrapS = THREE.RepeatWrapping;
+grassNormal.wrapS = THREE.RepeatWrapping;
+grassRoughness.wrapS = THREE.RepeatWrapping;
+
+grassColor.wrapT = THREE.RepeatWrapping;
+grassAmbient.wrapT = THREE.RepeatWrapping;
+grassNormal.wrapT = THREE.RepeatWrapping;
+grassRoughness.wrapT = THREE.RepeatWrapping;
 
 doorColor.generateMipmaps = false;
 doorColor.minFilter = THREE.NearestFilter;
 doorColor.magFilter = THREE.NearestFilter;
-matcapTexture.generateMipmaps = false;
-matcapTexture.minFilter = THREE.NearestFilter;
-matcapTexture.magFilter = THREE.NearestFilter;
 
-const environmentMapTexture = cubeTextureLoader.load([
-    './textures/environmentMaps/0/nx.jpg',
-    './textures/environmentMaps/0/px.jpg',
-    './textures/environmentMaps/0/ny.jpg',
-    './textures/environmentMaps/0/py.jpg',
-    './textures/environmentMaps/0/nz.jpg',
-    './textures/environmentMaps/0/pz.jpg',
-])
-
+// Scene
 const scene = new THREE.Scene();
+
+// Fog
+const fog = new THREE.Fog(0x263F71, 1, 15);
+scene.fog = fog; 
+
 
 /**  
  * Materials
 */
+const doorMaterial = new THREE.MeshStandardMaterial({
+    map: doorColor,
+    transparent: true,
+    alphaMap: doorAlpha,
+    aoMap: doorAmbient,
+    displacementMap: doorHeight,
+    displacementScale: .12,
+    normalMap: doorNormal,
+    metalnessMap: doorMetalness,
+    roughnessMap: doorRoughness   
+});
 
-/* const material = new THREE.MeshBasicMaterial({map: doorColor});
-material.transparent = true;
-material.alphaMap = doorAlpha; */
+const wallMaterial = new THREE.MeshStandardMaterial({
+    map: brickColor,
+    aoMap: brickAmbient,
+    normalMap: brickNormal,
+    roughnessMap: brickRoughness   
+});
 
-/* const material = new THREE.MeshNormalMaterial();
-material.normalMap = doorNormal;
-material.side = THREE.DoubleSide;
-material.flatShading = true; */
-
-/* const material = new THREE.MeshMatcapMaterial();
-material.matcap = matcapTexture; */
-
-/* const material = new THREE.MeshDepthMaterial(); */
-
-/* const material = new THREE.MeshStandardMaterial();
-material.metalness = 0;
-material.roughness = 1;
-material.map = doorColor;
-material.side = THREE.DoubleSide;
-material.roughnessMap = doorRoughness;
-material.metalnessMap = doorMetalness;
-material.normalMap = doorNormal;
-material.normalScale.set(.5, .5);
-material.alphaMap = doorAlpha;
-material.transparent = true;
-material.displacementMap = doorHeight;
-material.displacementScale = .08;
-material.aoMap = doorAmbient;
-material.aoMapIntensity = 1;  */
-
-const material = new THREE.MeshStandardMaterial();
-material.metalness = 1;
-material.roughness = 0;
-material.envMap = environmentMapTexture;
-material.side = THREE.DoubleSide;
-
-/**
- * Fonts
- */
-const fontLoader = new FontLoader();
-
-const doughnhuts = [];
-const textMesh = new THREE.Mesh();
-fontLoader.load(
-    './fonts/helvetiker_regular.typeface.json',
-    (font) => {
-        const textGeometry = new TextGeometry('ShitSkata', {
-            font:font,
-            size: .5,
-            depth: .125,
-            curveSegments: 5,
-            bevelEnabled: true,
-            bevelThickness: .03,
-            bevelSize: .02,
-            bevelOffset: 0,
-            bevelSegments: 4
-        });
-
-        textGeometry.center();
-        const textMaterial = new THREE.MeshMatcapMaterial({matcap: matcapTexture});
-        // textMaterial.wireframe = true;
-        // textMesh = new THREE.Mesh(textGeometry, textMaterial);
-        textMesh.geometry = textGeometry;
-        textMesh.material = textMaterial;
-        scene.add(textMesh);
-
-
-        const torusGeometry = new THREE.TorusGeometry(.3, .2, 20, 45);
-        for (let i = 0; i < 100; i++) {
-            const dougnhutMesh = new THREE.Mesh(torusGeometry, textMaterial);
-            dougnhutMesh.position.x = (Math.random() - .5) * 10;
-            dougnhutMesh.position.y = (Math.random() - .5) * 10;
-            dougnhutMesh.position.z = (Math.random() - .5) * 10;
-            
-            dougnhutMesh.rotation.x = Math.random() * Math.PI;
-            dougnhutMesh.rotation.y = Math.random() * Math.PI;
-
-            const scale = Math.random();
-            dougnhutMesh.scale.set(scale, scale, scale);
-
-            scene.add(dougnhutMesh);
-            doughnhuts.push(dougnhutMesh);
-        }
-
-    }
-);
+const groundMaterial = new THREE.MeshStandardMaterial({
+    map: grassColor,
+    aoMap: grassAmbient,
+    normalMap: grassNormal,
+    roughnessMap: grassRoughness   
+});
 
 
 /**
  * Meshes
  */
-/* const sphere = new THREE.Mesh(new THREE.SphereGeometry(.5, 64, 64), material);
-sphere.position.x = -1.5;
+const house = new THREE.Group();
+scene.add(house);
 
-const plane = new THREE.Mesh(new THREE.PlaneGeometry(1, 1, 100, 100), material);
-plane.geometry.setAttribute('uv2', new THREE.BufferAttribute(plane.geometry.attributes.uv.array, 2));
+// Walls
+const walls = new THREE.Mesh(new THREE.BoxGeometry(4, 2.5, 3.5), wallMaterial);
+walls.geometry.setAttribute('uv2', new THREE.Float32BufferAttribute(walls.geometry.attributes.uv.array), 2);
+walls.position.y = 1.25;
+house.add(walls);
 
-const torus = new THREE.Mesh(new THREE.TorusGeometry(.3, .2, 64, 128), material);
-torus.position.x = 1.5;
+// Ground
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), groundMaterial);
+ground.geometry.setAttribute('uv2', new THREE.Float32BufferAttribute(ground.geometry.attributes.uv.array), 2);
+ground.rotation.x = - Math.PI * .5;
+scene.add(ground);
 
-scene.add(sphere, torus, plane); */
+// Roof
+const roof = new THREE.Mesh(new THREE.ConeGeometry(3.5, 1.5, 4, 4), new THREE.MeshStandardMaterial({color: 0xC80000}));
+roof.position.set(0, 3, 0);
+roof.rotation.y = Math.PI * .25;
+house.add(roof);
 
-const parameters = {
-    color: 0xff0000,
-    spin: () => {
-        gsap.to(plane.rotation, {duration: 4, y: plane.rotation.y + Math.PI * 2, ease:'circ'});
-    },
-    reset: () => {
-        gsap.to(plane.rotation, {duration: 6, y: 0, ease:'circ'});
-    }
-}
+// Door
+const door = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 2.2, 100, 100), doorMaterial);
+door.geometry.setAttribute('uv2', new THREE.Float32BufferAttribute(door.geometry.attributes.uv.array), 2);
+door.position.set(0, 1, 1.751); 
+house.add(door);
 
-/**
- * Debug
- */
-/* const gui = new dat.GUI();
-gui.add(material, 'roughness').min(0).max(1).step(.0001);
-gui.add(material, 'metalness').min(0).max(1).step(.0001); */
+// Bushes
+const bushGeometry = new THREE.SphereGeometry(1, 16, 16);
+const bushMaterial = new THREE.MeshStandardMaterial({color: 0x00FF00});
 
-const sizes = {
-    width: window.innerWidth,
-    height: window.innerHeight
+const bush1 = new THREE.Mesh(bushGeometry, bushMaterial);
+bush1.scale.set(.5, .5 , .5);
+bush1.position.set(.8, .2, 2.2);
+
+const bush2 = new THREE.Mesh(bushGeometry, bushMaterial);
+bush2.scale.set(.25, .25 , .25);
+bush2.position.set(1.4, .1, 2.1);
+
+const bush3 = new THREE.Mesh(bushGeometry, bushMaterial);
+bush3.scale.set(.15, .15 , .15);
+bush3.position.set(-1, .1, 2.3);
+
+const bush4 = new THREE.Mesh(bushGeometry, bushMaterial);
+bush4.scale.set(.4, .4 , .4);
+bush4.position.set(-.9, .1, 1.9);
+
+scene.add(bush1, bush2, bush3, bush4);
+
+// Graves
+const graves = new THREE.Group();
+scene.add(graves);
+
+const graveGeometry = new THREE.BoxGeometry(.7, .9, .15);
+const graveMaterial = new THREE.MeshStandardMaterial({color: 0xC3BEBE});
+for (let i = 0; i < 50; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const radius = 3 + Math.random() * 7;
+    const x = Math.sin(angle) * radius;
+    const z = Math.cos(angle) * radius;
+
+    const grave = new THREE.Mesh(graveGeometry, graveMaterial);
+    grave.position.set(x, .3, z);
+    grave.rotation.y = (Math.random() - .5) * Math.PI * .1;
+    grave.rotation.z = (Math.random() - .5) * Math.PI * .05;
+    graves.add(grave);
 };
 
 /**
  * Lights
  */
-const ambientLight = new THREE.AmbientLight(0xffffff, 1);
+const ambientLight = new THREE.AmbientLight(0x6D7E9F, .09);
 scene.add(ambientLight);
 
-const light = new THREE.PointLight(0xffffff, 0.9);
-light.position.set(2,3,4);
-scene.add(light);
+const directionalLight = new THREE.DirectionalLight(0x6D7E9F, .09);
+directionalLight.position.set(2, 2, 2);
+directionalLight.castShadow = true;
+scene.add(directionalLight);
+
+// Door light
+const doorLight = new THREE.PointLight(0xDF6D6D, .5, 7);
+doorLight.position.set(0, 2.3, 2.2);
+house.add(doorLight);
 
 const camera = new THREE.PerspectiveCamera(75, sizes.width/sizes.height, .1, 100);
-camera.position.z = 4;
+camera.position.set(1.5, 2, 4.5);
 scene.add(camera);
 
 window.addEventListener('resize', () => {
@@ -203,21 +196,29 @@ window.addEventListener('dblclick', () => {
     else {
         document.exitFullscreen();
     }
-})
+});
 
+const sizes = {
+    width: window.innerWidth,
+    height: window.innerHeight
+};
+
+/**
+ * Renderer
+ */
 const canvas = document.querySelector(".webgl");
 const renderer = new THREE.WebGLRenderer ({
     canvas:canvas
 });
-
+renderer.shadowMap.enabled = true;
 renderer.setSize(sizes.width, sizes.height);
-
 /**
  * Match the renderer pixel ratio to the screen's pixel ratio if the latter is greater than 1
  * Removes blurriness and stairs effect on edges 
  * Sets the max possible pixel ratio to 2 to improve performance 
  */
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setClearColor(0x263F71);
 
 const clock = new THREE.Clock;
 
@@ -227,26 +228,20 @@ const clock = new THREE.Clock;
 const controls = new OrbitControls(camera, canvas);
 controls.enableDamping = true;
 
+/**
+ * Debug
+ */
+const gui = new dat.GUI()
+gui.add(directionalLight.position, 'x').min(-10).max(10).step(.0001);
+gui.add(directionalLight.position, 'y').min(-10).max(10).step(.0001);
+gui.add(directionalLight.position, 'z').min(-10).max(10).step(.0001);
+
 function tick() {
     console.log("tick");
     const elapsedTime = clock.getElapsedTime()*.5;
 
     controls.update();
-    
-    doughnhuts.forEach((doughnut) => {
-        doughnut.rotation.x = elapsedTime ;
-        doughnut.rotation.y = elapsedTime * .9;
-    });
 
-    textMesh.position.x = Math.sin(elapsedTime);
-    textMesh.position.y = Math.cos(elapsedTime);
-
-/*     sphere.rotation.x = elapsedTime * .5;
-    sphere.rotation.y = elapsedTime * .3;
-    plane.rotation.x = elapsedTime * .5;
-    plane.rotation.y = elapsedTime * .3;
-    torus.rotation.x = elapsedTime * .5;
-    torus.rotation.y = elapsedTime * .3; */
     /* plane.position.y = Math.sin(elapsedTime);
     plane.position.x = Math.cos(elapsedTime); */
 
