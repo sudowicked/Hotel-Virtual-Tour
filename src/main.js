@@ -152,24 +152,39 @@ for (let i = 0; i < 50; i++) {
     grave.position.set(x, .3, z);
     grave.rotation.y = (Math.random() - .5) * Math.PI * .1;
     grave.rotation.z = (Math.random() - .5) * Math.PI * .05;
+
+    grave.castShadow = true;
     graves.add(grave);
 };
 
 /**
  * Lights
  */
-const ambientLight = new THREE.AmbientLight(0x6D7E9F, .09);
+const ambientLight = new THREE.AmbientLight(0x263F71, .02);
 scene.add(ambientLight);
 
-const directionalLight = new THREE.DirectionalLight(0x6D7E9F, .09);
+const directionalLight = new THREE.DirectionalLight(0x263F71, .09);
 directionalLight.position.set(2, 2, 2);
-directionalLight.castShadow = true;
 scene.add(directionalLight);
 
 // Door light
 const doorLight = new THREE.PointLight(0xDF6D6D, .5, 7);
 doorLight.position.set(0, 2.3, 2.2);
 house.add(doorLight);
+
+// Ghosts
+const ghost1 = new THREE.PointLight(0xff00ff, 2, 3);
+const ghost2 = new THREE.PointLight(0xffff00, 2, 3);
+const ghost3 = new THREE.PointLight(0x00ffff, 2, 3);
+scene.add(ghost1, ghost2, ghost3);
+
+/**
+ * Sizes
+ */
+const sizes = {
+    width: window.innerWidth,
+    height: window.innerHeight
+};
 
 window.addEventListener('resize', () => {
     // Update sizes 
@@ -194,11 +209,6 @@ window.addEventListener('dblclick', () => {
     }
 });
 
-const sizes = {
-    width: window.innerWidth,
-    height: window.innerHeight
-};
-
 /**
  * Camera
  */
@@ -213,7 +223,6 @@ const canvas = document.querySelector(".webgl");
 const renderer = new THREE.WebGLRenderer ({
     canvas:canvas
 });
-renderer.shadowMap.enabled = true;
 renderer.setSize(sizes.width, sizes.height);
 /**
  * Match the renderer pixel ratio to the screen's pixel ratio if the latter is greater than 1
@@ -223,13 +232,43 @@ renderer.setSize(sizes.width, sizes.height);
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.setClearColor(0x263F71);
 
-const clock = new THREE.Clock;
+/**
+ * Shadows
+ */
+renderer.shadowMap.enabled = true;
+directionalLight.castShadow = true;
+doorLight.castShadow = true;
+ghost1.castShadow = true;
+ghost2.castShadow = true;
+ghost3.castShadow = true;
+walls.castShadow = true;
+bush1.castShadow = true;
+bush2.castShadow = true;
+bush3.castShadow = true;
+bush4.castShadow = true;
+ground.receiveShadow = true;
+
+doorLight.shadow.mapSize.width = 256;
+doorLight.shadow.mapSize.height = 256;
+doorLight.shadow.camera.far = 7;
+
+ghost1.shadow.mapSize.width = 256;
+ghost1.shadow.mapSize.height = 256;
+ghost1.shadow.camera.far = 7;
+
+ghost2.shadow.mapSize.width = 256;
+ghost2.shadow.mapSize.height = 256;
+ghost2.shadow.camera.far = 7;
+
+ghost3.shadow.mapSize.width = 256;
+ghost3.shadow.mapSize.height = 256;
+ghost3.shadow.camera.far = 7;
 
 /**
  * Initializing orbit controls
  */
-const controls = new OrbitControls(camera, canvas);
-controls.enableDamping = true;
+// const controls = new OrbitControls(camera, canvas);
+// controls.enableDamping = true;
 
 /**
  * Debug
@@ -239,16 +278,35 @@ gui.add(directionalLight.position, 'x').min(-10).max(10).step(.0001);
 gui.add(directionalLight.position, 'y').min(-10).max(10).step(.0001);
 gui.add(directionalLight.position, 'z').min(-10).max(10).step(.0001);
 
+const clock = new THREE.Clock;
+
 function tick() {
     console.log("tick");
-    const elapsedTime = clock.getElapsedTime()*.5;
+    const elapsedTime = clock.getElapsedTime();
 
-    controls.update();
+    // controls.update();
 
-    /* plane.position.y = Math.sin(elapsedTime);
-    plane.position.x = Math.cos(elapsedTime); */
+    // Ghost movement
+    const ghost1Angle = elapsedTime * .5;
+    ghost1.position.x = Math.cos(ghost1Angle) * 4;
+    ghost1.position.z = Math.sin(ghost1Angle) * 4;
+    ghost1.position.y = Math.sin(elapsedTime * 2) + 1;
+    
+    const ghost2Angle = - elapsedTime * .35;
+    ghost2.position.x = Math.cos(ghost2Angle) * 5;
+    ghost2.position.z = Math.sin(ghost2Angle) * 5;
+    ghost2.position.y = Math.sin(elapsedTime * 4) + (Math.sin(elapsedTime) * 2.5);
 
-    // plane.rotation.y += .01;
+    const ghost3Angle = - elapsedTime * .35;
+    ghost3.position.x = Math.cos(ghost3Angle)  * (7 + Math.sin(elapsedTime * .3));
+    ghost3.position.z = Math.sin(ghost3Angle)  * (7 + Math.sin(elapsedTime * .5));
+    ghost3.position.y = Math.sin(elapsedTime * 5) + (Math.sin(elapsedTime) * 2);
+
+    camera.position.x = Math.cos(elapsedTime * .2) * (7 + Math.sin(elapsedTime * .5));
+    camera.position.z = Math.sin(elapsedTime * .2) * (5 + Math.sin(elapsedTime * .5));
+    camera.position.y = Math.sin(elapsedTime * .15) + 1.5;
+    camera.lookAt(house.position);
+
 
 /*  camera.position.x = Math.sin(cursor.x * Math.PI * 2) * 3;
     camera.position.z = Math.cos(cursor.x * Math.PI * 2) * 3;
