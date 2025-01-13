@@ -37,7 +37,7 @@ const modelLoader = new GLTFLoader();
 let mixer = null;
 
 modelLoader.load(
-  "/meshes/apoman.glb",
+  "./meshes/apoman.glb",
   (model) =>
   {
     mixer = new THREE.AnimationMixer(model.scene);
