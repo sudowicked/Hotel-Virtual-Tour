@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/Addons.js';
-import * as dat from 'lil-gui';
+import { GLTFLoader } from 'three/examples/jsm/Addons.js';
 
 // Scene
 const scene = new THREE.Scene();
@@ -11,7 +11,7 @@ const sizes = {
     height: window.innerHeight
 }
 const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, .1, 100);
-camera.position.set(0, 6, 6);
+camera.position.set(0, -1, 4);
 scene.add(camera);
 
 // Renderer
@@ -21,94 +21,36 @@ const renderer = new THREE.WebGLRenderer({
 });
 renderer.setSize(sizes.width, sizes.height);
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setClearColor(0xBC79FF);
+
+/**
+ * MAIN CODE
+ */
 
 // Meshes
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(100, 100), new THREE.MeshStandardMaterial({color: 0x6B6B6B}));
+floor.rotation.x = - Math.PI * .5;
+floor.position.y = -2;
+scene.add(floor);
 
-// Particles
-const parameters = {
-    count: 100000,
-    size: .02,
-    radius: 5,
-    branches: 5,
-    spin: 1,
-    power: 5,
-    insideColor: 0xf46b10,
-    outsideColor: 0xfa0000
-};
+const modelLoader = new GLTFLoader();
+let mixer = null;
 
-let geometry = null;
-let material = null;
-let galaxyPoints = null; 
+modelLoader.load(
+  "/meshes/apoman.glb",
+  (model) =>
+  {
+    mixer = new THREE.AnimationMixer(model.scene);
+    const action = mixer.clipAction(model.animations[0]);
+    action.play();
+    
+    scene.add(model.scene.children[0]);
+  }
+);
 
-function galaxy() {
-    // Remove old galaxy
-    if (galaxyPoints !== null) {
-        geometry.dispose();
-        material.dispose();
-        scene.remove(galaxyPoints);
-    };
-
-    // Geometry
-    geometry = new THREE.BufferGeometry();
-
-    const positions = new Float32Array(parameters.count * 3);
-    const colors = new Float32Array(parameters.count * 3);
-
-    const insideColor = new THREE.Color(parameters.insideColor);
-    const outsideColor = new THREE.Color(parameters.outsideColor);
-
-    for (let i = 0; i < parameters.count; i++) {
-        const i3 = i * 3;
-
-        // Position
-        const radius = Math.random() * parameters.radius;
-        const spinAngle = radius * parameters.spin;
-        const branchAngle = (i % parameters.branches) / parameters.branches * Math.PI * 2;
-
-        const randomX =(Math.pow(Math.random(), parameters.power)) * (Math.random() < .5 ? 1 : -1);
-        const randomY =(Math.pow(Math.random(), parameters.power)) * (Math.random() < .5 ? 1 : -1);
-        const randomZ =(Math.pow(Math.random(), parameters.power)) * (Math.random() < .5 ? 1 : -1);
-
-        positions[i3] = (Math.cos(branchAngle + spinAngle) ) * radius + randomX;
-        positions[i3 + 1] = randomY;
-        positions[i3 + 2] = (Math.sin(branchAngle + spinAngle) ) * radius + randomZ;
-
-        // Color
-        const mixedColor = insideColor.clone();
-        mixedColor.lerp(outsideColor, radius / parameters.radius);
-
-        colors[i3] = mixedColor.r;
-        colors[i3 + 1] = mixedColor.g;
-        colors[i3 + 2] = mixedColor.b;
-    };
-
-    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-    // Material Sroubis Labrinos!!
-    material = new THREE.PointsMaterial({
-        size: parameters.size,
-        sizeAttenuation: true,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
-        vertexColors: true
-    });
-
-    galaxyPoints = new THREE.Points(geometry, material);
-    scene.add(galaxyPoints);
-};
-galaxy();
-
-// Debug
-const gui = new dat.GUI();
-gui.add(parameters, 'count').min(0).max(100000).step(100).onFinishChange(galaxy);
-gui.add(parameters, 'size').min(0.01).max(.1).step(.01).onFinishChange(galaxy);
-gui.add(parameters, 'radius').min(0.1).max(10).step(.01).onFinishChange(galaxy);
-gui.add(parameters, 'branches').min(1).max(20).step(1).onFinishChange(galaxy);
-gui.add(parameters, 'spin').min(-5).max(5).step(.1).onFinishChange(galaxy);
-gui.add(parameters, 'power').min(0).max(8).step(1).onFinishChange(galaxy);
-gui.addColor(parameters, 'insideColor').onFinishChange(galaxy);
-gui.addColor(parameters, 'outsideColor').onFinishChange(galaxy);
+// Lights
+const ambient = new THREE.AmbientLight(0xBC79FF, 1);
+scene.add(ambient);
 
 // Orbit controls
 const controls = new OrbitControls(camera, canvas);
@@ -140,12 +82,17 @@ window.addEventListener('dblclick', () => {
 })
 
 const clock = new THREE.Clock();
+let previousTime = 0;
 
 // Tick function
 function tick() {
     const elapsedTime = clock.getElapsedTime();
+    const deltaTime = elapsedTime - previousTime;
+    previousTime = elapsedTime;
 
-    galaxyPoints.rotation.y = - elapsedTime * .2;
+    if (mixer !== null) {
+        mixer.update(deltaTime);
+    }
     
     controls.update();
     renderer.render(scene, camera);
