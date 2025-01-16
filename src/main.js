@@ -90,7 +90,7 @@ function tick() {
     const deltaTime = elapsedTime - previousTime;
     previousTime = elapsedTime;
 
-    if (mixer !== null) {
+    if (mixer) {
         mixer.update(deltaTime);
     }
     
