@@ -1,10 +1,19 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/Addons.js';
-import { GLTFLoader } from 'three/examples/jsm/Addons.js';
+import { LoadGLTFByPath, getOBjectByName } from '../static/libs/ModelHelper';
 import { gsap } from 'gsap/gsap-core';
+import { loadCurveFromJSON} from '../static/libs/CurveMethods'
+import PositionAlongPathState from '../static/libs/positionAlongPathTools/PositionAlongPathState';
+import { handleScroll, updatePosition} from '../static/libs/positionAlongPathTools/PositionAlongPathMethods';
+import * as dat from 'lil-gui';
+import { setupRenderer } from '../static/libs/RendererHelper';
 
 // Scene
 const scene = new THREE.Scene();
+
+// Paths
+const hotelPath = './meshes/hotel_mod.glb'
+const curvePathJSON = './meshes/curvePath.json'
 
 const sizes = {
     width: window.innerWidth,
@@ -14,66 +23,56 @@ const sizes = {
 // Mouse
 const mouse = new THREE.Vector2();
 
-// Camera
 window.addEventListener('mousemove', (event) => {
     mouse.x = event.clientX / sizes.width * 2 - 1;
     mouse.y = -(event.clientY / sizes.height) * 2 + 1;
 });
 
-const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, .1, 100);
-camera.position.set(0, -1, 7);
-scene.add(camera);
-
 // Renderer
 const canvas = document.querySelector('.webgl');
-const renderer = new THREE.WebGLRenderer({
-    canvas: canvas
-});
-renderer.setSize(sizes.width, sizes.height);
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-renderer.setClearColor(0x160000);
+const renderer = setupRenderer();   
+// renderer.setClearColor('#FFD94F');
 
 /**
  * MAIN CODE
  */
 
-// Meshes
-const floor = new THREE.Mesh(new THREE.PlaneGeometry(100, 100), new THREE.MeshStandardMaterial({color: 0x6B6B6B}));
-floor.rotation.x = - Math.PI * .5;
-floor.position.y = -4;
-scene.add(floor);
+// Meshes       
+await LoadGLTFByPath(scene, hotelPath);
 
-const modelLoader = new GLTFLoader();
-let model = null;
-let mixer = null;
-let action = null;
-let currentIntersect = null;
+let curvePath = await loadCurveFromJSON(curvePathJSON);
+// scene.add(curvePath.mesh);
 
-modelLoader.load(
-  "./meshes/apoman.glb",
-  (gltf) =>
-  {
-    model = gltf.scene;
-    mixer = new THREE.AnimationMixer(gltf.scene);
-    action = mixer.clipAction(gltf.animations[0]);
-    action.setLoop( THREE.LoopOnce );
-    action.clampWhenFinished = true; 
-    scene.add(model);
-  }
-);
+// CameraList
+const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, .1, 100);
+camera.position.copy(curvePath.curve.getPointAt(0));
+camera.lookAt(curvePath.curve.getPointAt(0.99));
+scene.add(camera);
 
-// Raycaster
-const raycaster = new THREE.Raycaster();
+// PathState
+let positionAlongPathState = new PositionAlongPathState();
+
+window.addEventListener('wheel', (event) => {
+    handleScroll(event, positionAlongPathState);
+    console.log("scroll")
+});
+
 
 // Lights
-const ambient = new THREE.AmbientLight(0x160000, .8);
-const rectLight = new THREE.RectAreaLight(0xE60000, 2, 4, 4);
-rectLight.position.z = 7;
-scene.add(ambient, rectLight);
+const spotLight = new THREE.SpotLight('#ffffff', 10);
+spotLight.position.set(3.8, 3.2, -3.5);
+// scene.add(spotLight);
 
 // Orbit controls
-const controls = new OrbitControls(camera, canvas);
-controls.enableDamping = true;
+// const controls = new OrbitControls(camera, canvas);
+// controls.enableDamping = true;
+
+// Debug
+// const gui = new dat.GUI();
+// gui.add(spotLight, 'intensity').min(0).max(10).step(.001).name('lightIntensity');
+// gui.add(spotLight.position, 'x').min(-5).max(10).step(.001).name('lightX');
+// gui.add(spotLight.position, 'y').min(-5).max(10).step(.001).name('lightY');
+// gui.add(spotLight.position, 'z').min(-5).max(10).step(.001).name('lightZ');
 
 // Window resize
 window.addEventListener('resize', () => {
@@ -100,44 +99,6 @@ window.addEventListener('dblclick', () => {
     }
 });
 
-let inFocus = false;
-// Mouse click function
-window.addEventListener('click', () => {
-    if (currentIntersect) {
-        if (!inFocus) {
-            // Animation handling
-            gsap.to(model.scale, {duration:1, x:2});
-            gsap.to(model.scale, {duration:1, y:2});
-            gsap.to(model.scale, {duration:1, z:2});
-        
-            gsap.to(model.position, {duration:1, z:2});
-
-            gsap.to(model.rotation, {duration:2, x:Math.PI * .15});
-            
-            // Facial animation handling
-            inFocus = true;
-            action.timeScale = 1;
-            action.reset();
-            action.play();
-        }
-        else {
-            gsap.to(model.scale, {duration:1, x:1});
-            gsap.to(model.scale, {duration:1, y:1});
-            gsap.to(model.scale, {duration:1, z:1});
-
-            gsap.to(model.position, {duration:1, z:-2});
-
-            gsap.to(model.rotation, {duration:2, x: 0});
-
-            inFocus = false;
-            action.reset();
-            action.time = 2;
-            action.timeScale = -1;
-            action.play();
-        }
-    }
-});
-
 const clock = new THREE.Clock();
 let previousTime = 0;
 
@@ -147,25 +108,11 @@ function tick() {
     const deltaTime = elapsedTime - previousTime;
     previousTime = elapsedTime;
 
-    if (mixer) {
-        mixer.update(deltaTime);
-    };
+    updatePosition(curvePath, camera, positionAlongPathState);
 
-    // Raycast
-    raycaster.setFromCamera(mouse, camera);
-
-    // Check if model is being hovered
-    if (model) {
-        const modelIntersects = raycaster.intersectObject(model);
-        if (modelIntersects.length) {
-            currentIntersect = modelIntersects;
-        }
-        else {
-            currentIntersect = null;
-        }
-    };
     
-    controls.update();
+    
+    // controls.update();
     renderer.render(scene, camera);
     window.requestAnimationFrame(tick);
 };
