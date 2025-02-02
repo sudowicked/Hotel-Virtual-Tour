@@ -1,5 +1,7 @@
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
+let model = null;
+
 export const LoadGLTFByPath = (scene, startingModelPath) => {
     return new Promise((resolve, reject) => {
       // Create a loader
@@ -7,9 +9,9 @@ export const LoadGLTFByPath = (scene, startingModelPath) => {
   
       // Load the GLTF file
       loader.load(startingModelPath, (gltf) => {
-
-        scene.add(gltf.scene);
-
+        model = gltf.scene;
+        scene.add(model);
+        
         resolve();
       }, undefined, (error) => {
         reject(error);
