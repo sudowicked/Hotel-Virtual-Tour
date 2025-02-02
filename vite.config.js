@@ -13,6 +13,7 @@ export default {
     {
         outDir: '../app',
         emptyOutDir: true,
-        sourcemap: true
+        sourcemap: true,
+        target: 'esnext' //browsers can handle the latest ES features
     }
 }
