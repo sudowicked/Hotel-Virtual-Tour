@@ -14,3 +14,16 @@ body {
     left: 0;
     top: 0;
 }
+
+.section
+{
+    align-items: center;
+    height: 100vh;
+    position: fixed;
+    font-family: 'Cabin', sans-serif;
+    color: #ffeded;
+    text-transform: uppercase;
+    font-size: 5vmin;
+    padding-left: 7%;
+    padding-right: 10%;
+}
