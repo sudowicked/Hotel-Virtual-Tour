@@ -1,9 +1,12 @@
 let touchStartY = 0; // Store the initial touch position
-let swipeCounter = 0; // Tracks how many times the user swiped
 export let isScrolling = false;
 let scrollTimeout = null;
 let lastScrollTime = 0;
-let isTouchpad = false; // Detects touchpad usage
+let consecutiveScrolls = 1;
+let speedMultiplier = .5;
+let swipeStartY = 0;
+let swipeEndY = 0;
+const input = document.querySelector('#input');
 
 export function handleScroll(event, positionAlongPathState) {
     event.preventDefault(); // Prevent browser scrolling (stops pull-to-refresh)
@@ -12,15 +15,13 @@ export function handleScroll(event, positionAlongPathState) {
     const timeSinceLastScroll = now - lastScrollTime;
     lastScrollTime = now; // Update last scroll timestamp
 
-    // **Detect touchpad vs mouse**
-    if (event.type === "wheel") {
-        isTouchpad = Math.abs(event.deltaY) < 30; // Small delta indicates touchpad
-    }
 
     // **Increase swipeCounter only if there was a pause between gestures**
-    if (timeSinceLastScroll > 100) {  
-        swipeCounter = Math.min(swipeCounter + 1, 25); // Count only new swipes
-        console.log("Swipe count:", swipeCounter);
+    if (timeSinceLastScroll > 100 && timeSinceLastScroll < 600) { 
+        // console.log(timeSinceLastScroll);
+        consecutiveScrolls = Math.min(consecutiveScrolls + .8, 5);
+        // console.log(consecutiveScrolls)
+        
     }
 
     // Clear timeout if still scrolling
@@ -30,11 +31,22 @@ export function handleScroll(event, positionAlongPathState) {
     positionAlongPathState.startingDistance = positionAlongPathState.currentDistanceOnPath;
 
     let changeInScroll = 0;
-    let speedMultiplier = swipeCounter * .5; // Base speed increase
+    speedMultiplier = consecutiveScrolls * .5; // Base speed increase
+
+    isScrolling = true;
 
     // Handle **mouse wheel & touchpad**
     if (event.type === "wheel") {
         changeInScroll = -Math.sign(event.deltaY);
+        if (Math.abs(event.wheelDeltaY) === 120) {
+            // speedMultiplier *= 4;
+            console.log("Mouse", speedMultiplier);
+        }
+        else {
+            speedMultiplier *=.5;
+            console.log("Trackpad", speedMultiplier);
+            // input.innerHTML = speedMultiplier;
+        }
     } 
     // Handle **touch swipes**
     else if (event.type === "touchmove") {
@@ -42,11 +54,16 @@ export function handleScroll(event, positionAlongPathState) {
         const swipeDistance = touchStartY - touchEndY;
 
         if (Math.abs(swipeDistance) > 10) { // Ignore small movements
-            changeInScroll = Math.sign(swipeDistance);
-        }
-
-        speedMultiplier *= 4;
-    }
+            if (swipeEndY < swipeStartY) {
+                changeInScroll = Math.sign(swipeDistance);
+            }
+            if (swipeEndY > swipeStartY)  {
+                changeInScroll = -Math.sign(swipeDistance);
+            } // Detect direction of touch swipe (up/down) and move camera accordingly 
+            speedMultiplier *= 2;
+            // input.innerHTML = speedMultiplier;
+        };
+    };
 
     // Apply movement to target distance
     positionAlongPathState.targetDistance += (changeInScroll * speedMultiplier) / positionAlongPathState.lengthToScroll;
@@ -55,31 +72,32 @@ export function handleScroll(event, positionAlongPathState) {
     // **Detect end of scrolling and reset swipeCounter only after a pause**
     scrollTimeout = setTimeout(() => {
         isScrolling = false;
-        swipeCounter = 0;
-    }, 50); 
-}
+        consecutiveScrolls = 1;
+    }, 600); 
+};
+
 
 export function handleScrollEnd() {
     isScrolling = false; // Reset scrolling state
-}
+    swipeStartY = swipeEndY; // Reset so next movement is independent
+    console.log('scroll end')
+};
 
 // Capture the initial touch position when the touch starts
 export function handleTouchStart(event) {
     touchStartY = event.touches[0].clientY;
-}
+};
 
-// **Ensure swipeCounter increases only when the user lifts their finger**
+// TODO z**Ensure swipeCounter increases only when the user lifts their finger**
 export function handleTouchEnd() {
-    swipeCounter = Math.min(swipeCounter + 1, 25);
-    console.log("Swipe count increased:", swipeCounter);
-}
+};
     
 
 // Update the position of the object (camera) along the curve path
 export function updatePosition(curvePath, object, positionAlongPathState) {
 
     // Smoothing parameters
-    const smoothingFactor = 0.05;
+    const smoothingFactor = 0.04;
     const stopThreshold = 0.00001;
 
     // Calculate the distance to the target
@@ -115,7 +133,13 @@ export function updatePosition(curvePath, object, positionAlongPathState) {
 
 // Listen for scroll and touch events
 document.addEventListener("wheel", handleScrollEnd);
-document.addEventListener("touchend", handleScrollEnd);
-document.addEventListener("touchmove", (event) => {
-    event.preventDefault();
-}, { passive: false });
+document.addEventListener('touchstart', e => {
+    swipeStartY = e.changedTouches[0].screenY;
+});
+document.addEventListener("touchend", e => {
+    swipeEndY = e.changedTouches[0].screenY;
+    handleScrollEnd();
+});
+// document.addEventListener("touchmove", (event) => {
+//     event.preventDefault();
+// }, { passive: false });

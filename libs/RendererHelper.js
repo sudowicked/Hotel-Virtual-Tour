@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 
+
+
 export function setupRenderer() {
 
 	//Renderer does the job of rendering the graphics
@@ -17,12 +19,14 @@ export function setupRenderer() {
 	renderer.shadows = true;
 	renderer.shadowMap.type = 1;
 	renderer.shadowMap.enabled = true;
-	renderer.toneMapping = 0;
+	// renderer.toneMapping = 0;
 	renderer.toneMappingExposure = 1
 	renderer.useLegacyLights  = false;
-	renderer.toneMapping = THREE.NoToneMapping;
-	// renderer.setClearColor(0xffffff, 0);
+	renderer.toneMapping = THREE.ReinhardToneMapping;
+	renderer.setClearColor("#1D1D1D", 1);
 	renderer.outputColorSpace = THREE.SRGBColorSpace //make sure three/build/three.module.js is over r152 or this feature is not available. 
+	
 
+	
 	return renderer
 }
