@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/Addons.js';
-import { LoadGLTFByPath, getOBjectByName } from '../static/libs/ModelHelper';
+import { LoadGLTFByPath, getOBjectByName, mixer, doorOpenAction, fanSpinAction1, fanSpinAction2, doorHandleAction } from '../static/libs/ModelHelper';
 import { gsap } from 'gsap/gsap-core';
 import { loadCurveFromJSON} from '../static/libs/CurveMethods'
 import PositionAlongPathState from '../static/libs/positionAlongPathTools/PositionAlongPathState';
@@ -17,8 +17,8 @@ import { RectAreaLightHelper } from 'three/examples/jsm/Addons.js';
 const scene = new THREE.Scene();
 
 // Paths
-const hotelPath = './meshes/panasonic/EditorFinal.glb'
-const curvePathJSON = './meshes/panasonic/PanaCurve.json'
+const hotelPath = './meshes/cyber/cyber.glb'
+const curvePathJSON = './meshes/cyber/cyberPath.json'
 
 const sizes = {
     width: window.innerWidth,
@@ -51,6 +51,11 @@ await LoadGLTFByPath(scene, hotelPath);
 let curvePath = await loadCurveFromJSON(curvePathJSON);
 // scene.add(curvePath.mesh);
 
+function playAnim () {
+    fanSpinAction1.play();
+    fanSpinAction2.play();
+};
+playAnim();
 // CameraList
 const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, .1, 100);
 camera.position.copy(curvePath.curve.getPointAt(0));
@@ -111,8 +116,8 @@ rectLight.lookAt(new THREE.Vector3(0, 0, 0))
 // scene.add(rectLight);
 
 // Orbit controls
-// const controls = new OrbitControls(camera, canvas);
-// controls.enableDamping = true;
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true;
 
 // Debug
 
@@ -167,17 +172,51 @@ window.addEventListener('dblclick', () => {
 const clock = new THREE.Clock();
 let previousTime = 0;
 
+let doorOpen = false;
 // Tick function
 function tick() {
     const elapsedTime = clock.getElapsedTime();
     const deltaTime = elapsedTime - previousTime;
     previousTime = elapsedTime;
 
+    // Animation
+    if (mixer) {
+        mixer.update(deltaTime);
+    }
+    console.log(positionAlongPathState.targetDistance)
+    if (Math.abs(positionAlongPathState.currentDistanceOnPath) > .28) {
+        if (!doorOpen) {
+            doorOpenAction.timeScale = 1;
+            doorOpenAction.reset();
+            doorOpenAction.play();
+
+            doorHandleAction.timeScale = 1;
+            doorHandleAction.reset();
+            doorHandleAction.play();
+            doorOpen = true;
+        }
+    } else if (Math.abs(positionAlongPathState.currentDistanceOnPath) < .28) {
+        if (doorOpen) {
+            doorOpenAction.reset();
+            doorOpenAction.time = 1.3;
+            doorOpenAction.timeScale = -1;
+            doorOpenAction.play();
+
+            doorHandleAction.reset();
+            doorHandleAction.time = 1;
+            doorHandleAction.timeScale = -1;
+            doorHandleAction.play();
+
+
+            doorOpen = false;
+        }
+    };
+
     updatePosition(curvePath, camera, positionAlongPathState);
+    // controls.update();
 
     // console.log(isScrolling)
     
-    // controls.update();
     renderer.render(scene, camera);
     window.requestAnimationFrame(tick);
     composer.render();
