@@ -40,11 +40,11 @@ export function handleScroll(event, positionAlongPathState) {
         changeInScroll = -Math.sign(event.deltaY);
         if (Math.abs(event.wheelDeltaY) === 120) {
             // speedMultiplier *= 4;
-            console.log("Mouse", speedMultiplier);
+            // console.log("Mouse", speedMultiplier);
         }
         else {
             speedMultiplier *=.5;
-            console.log("Trackpad", speedMultiplier);
+            // console.log("Trackpad", speedMultiplier);
             // input.innerHTML = speedMultiplier;
         }
     } 
@@ -80,7 +80,7 @@ export function handleScroll(event, positionAlongPathState) {
 export function handleScrollEnd() {
     isScrolling = false; // Reset scrolling state
     swipeStartY = swipeEndY; // Reset so next movement is independent
-    console.log('scroll end')
+    // console.log('scroll end')
 };
 
 // Capture the initial touch position when the touch starts
@@ -120,6 +120,8 @@ export function updatePosition(curvePath, object, positionAlongPathState) {
     // Wrap position into a percentage along the path
     positionAlongPathState.currentPercentageOnPath =
         (positionAlongPathState.currentDistanceOnPath % 1 + 1) % 1;
+
+    // console.log(positionAlongPathState.currentDistanceOnPath);
 
     let lookAtPosition = positionAlongPathState.currentPercentageOnPath - 0.001;
     lookAtPosition = (lookAtPosition % 1 + 1) % 1;
