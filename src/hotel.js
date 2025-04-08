@@ -244,7 +244,7 @@ function tick() {
     };
 
     updatePosition(curvePath, camera, positionAlongPathState);
-    smokeEffect.update(0.016);
+    smokeEffect.update(0.026);
     // controls.update();
 
     // const parallaxX = mouse.x * .1;
