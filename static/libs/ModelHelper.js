@@ -1,7 +1,7 @@
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import * as THREE from 'three';
 
-let model = null;
+export let model = null;
 export let mixer = null;
 export let doorOpenAction, fanSpinAction1, fanSpinAction2, doorHandleAction = null;
 
@@ -16,7 +16,7 @@ export const LoadGLTFByPath = (scene, startingModelPath) => {
        // model.rotation.set(0, Math.PI/6, 0);
        // model.position.set(4, 1, 0);
         scene.add(model);
-        console.log(gltf.animations[1]);
+        console.log(model.children[24]);
 
         mixer = new THREE.AnimationMixer(model);
         doorOpenAction = mixer.clipAction(gltf.animations[0]);

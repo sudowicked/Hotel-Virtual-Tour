@@ -6,7 +6,7 @@ let consecutiveScrolls = 1;
 let speedMultiplier = .5;
 let swipeStartY = 0;
 let swipeEndY = 0;
-const input = document.querySelector('#input');
+const input = document.querySelector('.section');
 
 export function handleScroll(event, positionAlongPathState) {
     event.preventDefault(); // Prevent browser scrolling (stops pull-to-refresh)

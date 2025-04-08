@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/Addons.js';
-import { LoadGLTFByPath, getOBjectByName, mixer, doorOpenAction, fanSpinAction1, fanSpinAction2, doorHandleAction } from '../static/libs/ModelHelper';
+import { LoadGLTFByPath, getOBjectByName, mixer, doorOpenAction, fanSpinAction1, fanSpinAction2, doorHandleAction, model } from '../static/libs/ModelHelper';
 import { gsap } from 'gsap/gsap-core';
 import { loadCurveFromJSON} from '../static/libs/CurveMethods'
 import PositionAlongPathState from '../static/libs/positionAlongPathTools/PositionAlongPathState';
@@ -12,6 +12,7 @@ import { OutputPass } from 'three/examples/jsm/Addons.js';
 import { UnrealBloomPass } from 'three/examples/jsm/Addons.js';
 import { EffectComposer } from 'three/examples/jsm/Addons.js';
 import { RectAreaLightHelper } from 'three/examples/jsm/Addons.js';
+import { getParticleSystem } from '../static/libs/getParticleSystem';
 
 // Scene
 const scene = new THREE.Scene();
@@ -28,18 +29,35 @@ const sizes = {
 // Mouse
 const mouse = new THREE.Vector2();
 
+let yaw = 0;
+let pitch = 0;
+let yawVelocity = 0;
+let pitchVelocity = 0;
+
+const rotationSpeed = 0.00002;
+const damping = 0.95; // lower = more inertia
+
+const cameraTarget = new THREE.Vector3();
+
+
 window.addEventListener('mousemove', (event) => {
-    mouse.x = event.clientX / sizes.width * 2 - 1;
-    mouse.y = -(event.clientY / sizes.height) * 2 + 1;
+    const deltaX = event.movementX || 0;
+    const deltaY = event.movementY || 0;
+
+    // Inverted direction for orbit feel
+    yawVelocity += deltaX * rotationSpeed;
+    pitchVelocity -= deltaY * rotationSpeed;
 });
+
 
 // Renderer
 const canvas = document.querySelector('.webgl');
+const container = document.querySelector('.fullscreen-container');
 const renderer = setupRenderer();   
 let composer;
 
 
-// renderer.setClearColor('#FFD94F');
+renderer.setClearColor('#000000');
 
 /**
  * MAIN CODE
@@ -56,6 +74,7 @@ function playAnim () {
     fanSpinAction2.play();
 };
 playAnim();
+
 // CameraList
 const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, .1, 100);
 camera.position.copy(curvePath.curve.getPointAt(0));
@@ -144,6 +163,18 @@ controls.enableDamping = true;
 
 // } );
 
+// Smoke particles
+const pipePosition = model.children[24].position;
+
+const smokeEffect = getParticleSystem({
+    camera,
+    emitter: new THREE.Vector3(pipePosition.x - .1, pipePosition.y + .36, pipePosition.z - .2),
+    parent: scene,
+    rate: 50,
+    texture: './textures/img/smoke.png',
+});
+
+
 // Window resize
 window.addEventListener('resize', () => {
     // Update sizes
@@ -160,10 +191,9 @@ window.addEventListener('resize', () => {
 });
 
 // Double click function
-window.addEventListener('dblclick', () => {
+container.addEventListener('dblclick', () => {
     if (!document.fullscreenElement) {
-        canvas.requestFullscreen();
-    }
+        container.requestFullscreen();    }
     else {
         document.exitFullscreen();
     }
@@ -173,6 +203,7 @@ const clock = new THREE.Clock();
 let previousTime = 0;
 
 let doorOpen = false;
+
 // Tick function
 function tick() {
     const elapsedTime = clock.getElapsedTime();
@@ -183,7 +214,7 @@ function tick() {
     if (mixer) {
         mixer.update(deltaTime);
     }
-    console.log(positionAlongPathState.targetDistance)
+    // console.log(positionAlongPathState.targetDistance)
     if (Math.abs(positionAlongPathState.currentDistanceOnPath) > .28) {
         if (!doorOpen) {
             doorOpenAction.timeScale = 1;
@@ -213,9 +244,64 @@ function tick() {
     };
 
     updatePosition(curvePath, camera, positionAlongPathState);
+    smokeEffect.update(0.016);
     // controls.update();
 
-    // console.log(isScrolling)
+    // const parallaxX = mouse.x * .1;
+    // const parallaxY = mouse.y * .1;
+
+    // model.rotation.y += (parallaxX - model.rotation.y) * deltaTime;
+    // model.rotation.z += (parallaxY - model.rotation.z) * deltaTime;
+    
+    // Move camera along the path  
+    // Get normalized t in [0, 1]
+    let t = positionAlongPathState.currentDistanceOnPath % 1;
+    if (t < 0) t += 1;
+
+    // Move camera along path
+    const pointOnPath = curvePath.curve.getPointAt(t);
+    camera.position.copy(pointOnPath);
+
+    // Get tangent to align the base direction
+    const tangent = curvePath.curve.getTangentAt(t).normalize();
+
+    // Y-axis up vector
+    const up = new THREE.Vector3(0, 1, 0);
+
+    // Create base rotation to align with tangent
+    const baseQuat = new THREE.Quaternion().setFromUnitVectors(
+        new THREE.Vector3(0, 0, -1), // default forward
+        tangent
+    );
+
+    // Update yaw/pitch with inertia
+    yaw += yawVelocity;
+    pitch += pitchVelocity;
+
+    yawVelocity *= damping;
+    pitchVelocity *= damping;
+
+    // Clamp pitch
+    const pitchLimit = Math.PI / 2 - 0.1;
+    pitch = THREE.MathUtils.clamp(pitch, -pitchLimit, pitchLimit);
+
+    // Build rotation around base forward direction
+    const tempObject = new THREE.Object3D();
+    tempObject.quaternion.copy(baseQuat);
+
+    // Apply yaw (around world Y)
+    tempObject.rotateOnWorldAxis(up, yaw);
+
+    // Apply pitch (around local X)
+    tempObject.rotateX(pitch);
+
+    // Set camera to look in that direction
+    const direction = new THREE.Vector3(0, 0, 1).applyQuaternion(tempObject.quaternion);
+    cameraTarget.copy(camera.position).add(direction);
+    camera.lookAt(cameraTarget);
+
+
+    console.log(mouse.x)
     
     renderer.render(scene, camera);
     window.requestAnimationFrame(tick);
