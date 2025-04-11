@@ -39,7 +39,6 @@ const damping = 0.95; // lower = more inertia
 
 const cameraTarget = new THREE.Vector3();
 
-
 window.addEventListener('mousemove', (event) => {
     const deltaX = event.movementX || 0;
     const deltaY = event.movementY || 0;
@@ -56,7 +55,6 @@ const container = document.querySelector('.fullscreen-container');
 const renderer = setupRenderer();   
 let composer;
 
-
 renderer.setClearColor('#000000');
 
 /**
@@ -69,6 +67,7 @@ await LoadGLTFByPath(scene, hotelPath);
 let curvePath = await loadCurveFromJSON(curvePathJSON);
 // scene.add(curvePath.mesh);
 
+// Fan spin animation
 function playAnim () {
     fanSpinAction1.play();
     fanSpinAction2.play();
@@ -121,18 +120,6 @@ window.addEventListener('touchmove', (event) => {
     }, 
     {passive: false}
 );
-
-
-// Lights
-const spotLight = new THREE.SpotLight('#ffffff', 10);
-spotLight.position.set(3.8, 3.2, -3.5);
-// scene.add(spotLight);
-const rectLight = new THREE.RectAreaLight('#FFA000', 4, 10, 10);
-const rectLightHelper = new RectAreaLightHelper(rectLight);
-rectLight.position.set(7, 10, -2);
-rectLight.lookAt(new THREE.Vector3(0, 0, 0))
-
-// scene.add(rectLight);
 
 // Orbit controls
 const controls = new OrbitControls(camera, canvas);
@@ -214,33 +201,38 @@ function tick() {
     if (mixer) {
         mixer.update(deltaTime);
     }
-    // console.log(positionAlongPathState.targetDistance)
-    if (Math.abs(positionAlongPathState.currentDistanceOnPath) > .28) {
-        if (!doorOpen) {
-            doorOpenAction.timeScale = 1;
-            doorOpenAction.reset();
-            doorOpenAction.play();
 
-            doorHandleAction.timeScale = 1;
-            doorHandleAction.reset();
-            doorHandleAction.play();
-            doorOpen = true;
-        }
-    } else if (Math.abs(positionAlongPathState.currentDistanceOnPath) < .28) {
-        if (doorOpen) {
-            doorOpenAction.reset();
-            doorOpenAction.time = 1.3;
-            doorOpenAction.timeScale = -1;
-            doorOpenAction.play();
+    // Get normalized t in [0, 1]
+    let splinePos = -(positionAlongPathState.currentDistanceOnPath % 1);
+    if (splinePos < 0) splinePos += 1;
 
-            doorHandleAction.reset();
-            doorHandleAction.time = 1;
-            doorHandleAction.timeScale = -1;
-            doorHandleAction.play();
+    // Door should be open between 0.28 and 0.6
+    const inRoom = splinePos > 0.28 && splinePos < 0.9;
 
+    console.log(splinePos);
 
-            doorOpen = false;
-        }
+    if (inRoom && !doorOpen) {
+        doorOpenAction.timeScale = 1;
+        doorOpenAction.reset();
+        doorOpenAction.play();
+
+        doorHandleAction.timeScale = 1;
+        doorHandleAction.reset();
+        doorHandleAction.play();
+
+        doorOpen = true;
+    } else if (!inRoom && doorOpen) {
+        doorOpenAction.reset();
+        doorOpenAction.time = 1.3;
+        doorOpenAction.timeScale = -1;
+        doorOpenAction.play();
+
+        doorHandleAction.reset();
+        doorHandleAction.time = 1;
+        doorHandleAction.timeScale = -1;
+        doorHandleAction.play();
+
+        doorOpen = false;
     };
 
     updatePosition(curvePath, camera, positionAlongPathState);
@@ -252,8 +244,7 @@ function tick() {
 
     // model.rotation.y += (parallaxX - model.rotation.y) * deltaTime;
     // model.rotation.z += (parallaxY - model.rotation.z) * deltaTime;
-    
-    // Move camera along the path  
+
     // Get normalized t in [0, 1]
     let t = positionAlongPathState.currentDistanceOnPath % 1;
     if (t < 0) t += 1;
@@ -299,9 +290,6 @@ function tick() {
     const direction = new THREE.Vector3(0, 0, 1).applyQuaternion(tempObject.quaternion);
     cameraTarget.copy(camera.position).add(direction);
     camera.lookAt(cameraTarget);
-
-
-    console.log(mouse.x)
     
     renderer.render(scene, camera);
     window.requestAnimationFrame(tick);
