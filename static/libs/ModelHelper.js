@@ -3,7 +3,7 @@ import * as THREE from 'three';
 
 export let model = null;
 export let mixer = null;
-export let doorOpenAction, fanSpinAction1, fanSpinAction2, doorHandleAction = null;
+export let doorOpenAction, fanSpinAction1, fanSpinAction2, doorHandleAction, montanaAction = null;
 
 export const LoadGLTFByPath = (scene, startingModelPath) => {
     return new Promise((resolve, reject) => {
@@ -13,10 +13,8 @@ export const LoadGLTFByPath = (scene, startingModelPath) => {
       // Load the GLTF file
       loader.load(startingModelPath, (gltf) => {
         model = gltf.scene;
-       // model.rotation.set(0, Math.PI/6, 0);
-       // model.position.set(4, 1, 0);
         scene.add(model);
-        console.log(model.children[24]);
+        console.log(gltf);
 
         mixer = new THREE.AnimationMixer(model);
         doorOpenAction = mixer.clipAction(gltf.animations[0]);
@@ -31,6 +29,8 @@ export const LoadGLTFByPath = (scene, startingModelPath) => {
         fanSpinAction1.timeScale = 1.2;
         fanSpinAction2 = mixer.clipAction(gltf.animations[3]);
         fanSpinAction2.timeScale = 1.5;
+
+        montanaAction = mixer.clipAction(gltf.animations[4]);
         
         resolve();
       }, undefined, (error) => {

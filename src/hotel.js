@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/Addons.js';
-import { LoadGLTFByPath, getOBjectByName, mixer, doorOpenAction, fanSpinAction1, fanSpinAction2, doorHandleAction, model } from '../static/libs/ModelHelper';
+import { LoadGLTFByPath, getOBjectByName, mixer, doorOpenAction, fanSpinAction1, fanSpinAction2, doorHandleAction, model, montanaAction } from '../static/libs/ModelHelper';
 import { gsap } from 'gsap/gsap-core';
 import { loadCurveFromJSON} from '../static/libs/CurveMethods'
 import PositionAlongPathState from '../static/libs/positionAlongPathTools/PositionAlongPathState';
@@ -74,11 +74,26 @@ function playAnim () {
 };
 playAnim();
 
+montanaAction.play();
+
 // CameraList
 const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, .1, 100);
 camera.position.copy(curvePath.curve.getPointAt(0));
 camera.lookAt(curvePath.curve.getPointAt(0.99));
 scene.add(camera);
+
+// TV video element
+let video = document.getElementById('video');
+let videoTexture = new THREE.VideoTexture(video);
+videoTexture.minFilter = THREE.LinearFilter;
+videoTexture.magFilter = THREE.LinearFilter;
+videoTexture.format = THREE.RGBFormat;
+
+const lcd = model.children[50];
+video.play();
+console.log(lcd.children[1].geometry.groups)
+lcd.children[1].material = new THREE.MeshBasicMaterial({ map: videoTexture });
+
 
 const params = {
     threshold: 0,
@@ -197,12 +212,15 @@ function tick() {
     const deltaTime = elapsedTime - previousTime;
     previousTime = elapsedTime;
 
-    // Animation
-    if (mixer) {
-        mixer.update(deltaTime);
-    }
+    // Updates
+    updatePosition(curvePath, camera, positionAlongPathState);
+    smokeEffect.update(0.026);
+    // controls.update();
 
-    // Get normalized t in [0, 1]
+    // Animation update
+    if (mixer) mixer.update(deltaTime);
+
+    // Get normalized splinePos in [0, 1]
     let splinePos = -(positionAlongPathState.currentDistanceOnPath % 1);
     if (splinePos < 0) splinePos += 1;
 
@@ -235,9 +253,6 @@ function tick() {
         doorOpen = false;
     };
 
-    updatePosition(curvePath, camera, positionAlongPathState);
-    smokeEffect.update(0.026);
-    // controls.update();
 
     // const parallaxX = mouse.x * .1;
     // const parallaxY = mouse.y * .1;
@@ -290,9 +305,11 @@ function tick() {
     const direction = new THREE.Vector3(0, 0, 1).applyQuaternion(tempObject.quaternion);
     cameraTarget.copy(camera.position).add(direction);
     camera.lookAt(cameraTarget);
-    
+
     renderer.render(scene, camera);
     window.requestAnimationFrame(tick);
+
+    // Post processing update
     composer.render();
 };
 tick();
