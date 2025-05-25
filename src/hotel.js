@@ -71,7 +71,7 @@ let curvePath = await loadCurveFromJSON(curvePathJSON);
 function playAnim () {
     fanSpinAction1.play();
     fanSpinAction2.play();
-};
+}
 playAnim();
 
 montanaAction.play();
@@ -89,9 +89,8 @@ videoTexture.minFilter = THREE.LinearFilter;
 videoTexture.magFilter = THREE.LinearFilter;
 videoTexture.format = THREE.RGBFormat;
 
-const lcd = model.children[50];
+const lcd = model.children[51];
 video.play();
-console.log(lcd.children[1].geometry.groups)
 lcd.children[1].material = new THREE.MeshBasicMaterial({ map: videoTexture });
 
 
@@ -166,7 +165,7 @@ controls.enableDamping = true;
 // } );
 
 // Smoke particles
-const pipePosition = model.children[24].position;
+const pipePosition = model.children[23].position;
 
 const smokeEffect = getParticleSystem({
     camera,
@@ -176,6 +175,33 @@ const smokeEffect = getParticleSystem({
     texture: './textures/img/smoke.png',
 });
 
+// Create skybox
+function createPathStrings(filename, fileType) {
+    const basePath = './textures/environmentMaps/interstellar';
+    const sides = ['ft', 'bk', 'up', 'dn', 'rt', 'lf'];
+    const pathStrings = sides.map(side => {
+        return basePath + filename + "_" + side + fileType;
+    });
+    return pathStrings;
+}
+
+function createMaterialArray(filename, fileType) {
+    const skyboxPaths = createPathStrings(filename, fileType);
+    const arrayMaterial = skyboxPaths.map(image => {
+        let texture = new THREE.TextureLoader().load(image);
+        console.log(image);
+        return new THREE.MeshBasicMaterial({map: texture, side: THREE.BackSide});
+    });
+    return arrayMaterial;
+}
+
+const skyboxImage = '/interstellar';
+const skyboxFileType = '.png';
+
+const skyboxMaterial = createMaterialArray(skyboxImage, skyboxFileType);
+const skyboxGeometry = new THREE.BoxGeometry(100, 100, 100, 100, 100, 100);
+const skyboxMesh = new THREE.Mesh(skyboxGeometry, skyboxMaterial);
+scene.add(skyboxMesh);
 
 // Window resize
 window.addEventListener('resize', () => {
@@ -199,7 +225,7 @@ container.addEventListener('dblclick', () => {
     else {
         document.exitFullscreen();
     }
-});
+})
 
 const clock = new THREE.Clock();
 let previousTime = 0;
@@ -215,7 +241,6 @@ function tick() {
     // Updates
     updatePosition(curvePath, camera, positionAlongPathState);
     smokeEffect.update(0.026);
-    // controls.update();
 
     // Animation update
     if (mixer) mixer.update(deltaTime);
@@ -240,8 +265,11 @@ function tick() {
 
         doorOpen = true;
     } else if (!inRoom && doorOpen) {
-        doorOpenAction.reset();
-        doorOpenAction.time = 1.3;
+        // Reset animation if doorOpen has finished playing
+        if (!doorOpenAction.isRunning()) {
+            doorOpenAction.reset();
+            doorOpenAction.time = 1.66; 
+        }
         doorOpenAction.timeScale = -1;
         doorOpenAction.play();
 
@@ -251,7 +279,7 @@ function tick() {
         doorHandleAction.play();
 
         doorOpen = false;
-    };
+    }
 
 
     // const parallaxX = mouse.x * .1;
@@ -308,6 +336,11 @@ function tick() {
 
     renderer.render(scene, camera);
     window.requestAnimationFrame(tick);
+
+    // controls.update();
+
+    // Skybox anim
+    skyboxMesh.rotation.y += 0.0005;
 
     // Post processing update
     composer.render();
