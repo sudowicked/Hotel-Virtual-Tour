@@ -1,7 +1,5 @@
 import * as THREE from 'three';
 
-
-
 export function setupRenderer() {
 
 	//Renderer does the job of rendering the graphics
