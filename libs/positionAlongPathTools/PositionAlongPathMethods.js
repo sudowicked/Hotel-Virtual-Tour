@@ -31,7 +31,7 @@ export function handleScroll(event, positionAlongPathState) {
     positionAlongPathState.startingDistance = positionAlongPathState.currentDistanceOnPath;
 
     let changeInScroll = 0;
-    speedMultiplier = consecutiveScrolls * .5; // Base speed increase
+    speedMultiplier = consecutiveScrolls * .2; // Base speed increase
 
     isScrolling = true;
 
@@ -97,7 +97,7 @@ export function handleTouchEnd() {
 export function updatePosition(curvePath, object, positionAlongPathState) {
 
     // Smoothing parameters
-    const smoothingFactor = 0.04;
+    const smoothingFactor = 0.02;
     const stopThreshold = 0.00001;
 
     // Calculate the distance to the target

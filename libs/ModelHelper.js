@@ -3,7 +3,7 @@ import * as THREE from 'three';
 
 export let model = null;
 export let mixer = null;
-export let doorOpenAction, fanSpinAction1, fanSpinAction2, doorHandleAction, montanaAction = null;
+export let doorOpenAction, fanSpinAction1, fanSpinAction2, doorHandleAction = null;
 
 export const LoadGLTFByPath = (scene, startingModelPath) => {
     return new Promise((resolve, reject) => {
@@ -28,10 +28,8 @@ export const LoadGLTFByPath = (scene, startingModelPath) => {
         fanSpinAction1 = mixer.clipAction(gltf.animations[2]);
         fanSpinAction1.timeScale = 1.2;
         fanSpinAction2 = mixer.clipAction(gltf.animations[3]);
-        fanSpinAction2.timeScale = 1.5;
+        fanSpinAction2.timeScale = 2;
 
-        montanaAction = mixer.clipAction(gltf.animations[4]);
-        
         resolve();
       }, undefined, (error) => {
         reject(error);
