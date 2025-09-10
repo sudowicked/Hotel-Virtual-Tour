@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/Addons.js';
-import { LoadGLTFByPath, getOBjectByName, mixer, doorOpenAction, fanSpinAction1, fanSpinAction2, doorHandleAction, model, montanaAction } from '../static/libs/ModelHelper';
+import { LoadGLTFByPath, getOBjectByName, mixer, doorOpenAction, fanSpinAction1, fanSpinAction2, doorHandleAction, model} from '../static/libs/ModelHelper';
 import { gsap } from 'gsap/gsap-core';
 import { loadCurveFromJSON} from '../static/libs/CurveMethods'
 import PositionAlongPathState from '../static/libs/positionAlongPathTools/PositionAlongPathState';
@@ -61,8 +61,86 @@ renderer.setClearColor('#000000');
  * MAIN CODE
  */
 
+//LOADING MANAGER
+const loadingScreenElement = document.querySelector(".loading-screen");
+loadingScreenElement.classList.add("active"); // trigger animation
+const percentageElement = document.querySelector(".progress-percentage");
+percentageElement.classList.add("active");
+
+let currentProgress = 0;  
+let targetProgress = 0; 
+
+function animateProgress() {
+    currentProgress += (targetProgress - currentProgress) * 0.1;
+    percentageElement.textContent = `${Math.floor(currentProgress)}`;
+
+    if(currentProgress <= 100) {
+        requestAnimationFrame(animateProgress)
+    }
+
+}
+
+const loadingManager = new THREE.LoadingManager(
+    // Loaded
+    () =>
+    {
+        targetProgress = 101; 
+        window.setTimeout(() =>
+        {
+            console.log('loaded');
+            loadingScreenElement.classList.add("inactive");
+            percentageElement.classList.remove("active");
+            percentageElement.classList.add("inactive");
+            // gsap.to(loadingMaterial.uniforms.uAlpha, { duration: 3, value: 0});
+        }
+        , 1500)
+        
+    },
+    // Progress
+    (itemUrl, itemsLoaded, itemsTotal) =>
+    {
+        targetProgress = (itemsLoaded / itemsTotal) * 100;
+
+        // start animation loop if not running
+        if (currentProgress === 0) {
+            percentageElement.classList.add("active");
+            requestAnimationFrame(animateProgress);
+        }
+        console.log(itemsLoaded);
+    }
+);
+
+// Loading Screen
+const loadingGeometry = new THREE.PlaneGeometry(2, 2, 1, 1);
+const loadingMaterial = new THREE.ShaderMaterial(
+    {
+        transparent: true,
+        uniforms:
+        {
+            uAlpha: {value:1}
+        },
+        vertexShader: `
+            void main()
+            {
+                gl_Position = vec4(position, 1.0);
+            }
+                
+        `,
+        fragmentShader: `
+            uniform float uAlpha;
+
+            void main()
+            {
+                gl_FragColor = vec4(1.0, 0.0, 1.0, uAlpha); 
+            }
+        `
+    }
+);
+const loadingScreen = new THREE.Mesh(loadingGeometry, loadingMaterial);
+// scene.add(loadingScreen);
+
 // Meshes       
-await LoadGLTFByPath(scene, hotelPath);
+await LoadGLTFByPath(scene, hotelPath, loadingManager);
 
 let curvePath = await loadCurveFromJSON(curvePathJSON);
 // scene.add(curvePath.mesh);
@@ -74,7 +152,6 @@ function playAnim () {
 }
 playAnim();
 
-montanaAction.play();
 
 // CameraList
 const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, .1, 100);
@@ -89,14 +166,14 @@ videoTexture.minFilter = THREE.LinearFilter;
 videoTexture.magFilter = THREE.LinearFilter;
 videoTexture.format = THREE.RGBFormat;
 
-const lcd = model.children[51];
+const lcd = model.children[37];
 video.play();
 lcd.children[1].material = new THREE.MeshBasicMaterial({ map: videoTexture });
 
 
 const params = {
     threshold: 0,
-    strength: .183,
+    strength: .150,
     radius: 0,
     exposure: 1
 };
@@ -165,20 +242,20 @@ controls.enableDamping = true;
 // } );
 
 // Smoke particles
-const pipePosition = model.children[23].position;
+const pipePosition = model.children[21].position;
 
 const smokeEffect = getParticleSystem({
     camera,
-    emitter: new THREE.Vector3(pipePosition.x - .1, pipePosition.y + .36, pipePosition.z - .2),
+    emitter: new THREE.Vector3(pipePosition.x - .1, pipePosition.y + .36, pipePosition.z - .3),
     parent: scene,
-    rate: 50,
+    rate: 100,
     texture: './textures/img/smoke.png',
 });
 
 // Create skybox
 function createPathStrings(filename, fileType) {
     const basePath = './textures/environmentMaps/interstellar';
-    const sides = ['ft', 'bk', 'up', 'dn', 'rt', 'lf'];
+    const sides = ['ft-min', 'bk-min', 'up-min', 'dn-min', 'rt-min', 'lf-min'];
     const pathStrings = sides.map(side => {
         return basePath + filename + "_" + side + fileType;
     });
@@ -188,8 +265,8 @@ function createPathStrings(filename, fileType) {
 function createMaterialArray(filename, fileType) {
     const skyboxPaths = createPathStrings(filename, fileType);
     const arrayMaterial = skyboxPaths.map(image => {
-        let texture = new THREE.TextureLoader().load(image);
-        console.log(image);
+        let texture = new THREE.TextureLoader(loadingManager).load(image);
+        // console.log(image);
         return new THREE.MeshBasicMaterial({map: texture, side: THREE.BackSide});
     });
     return arrayMaterial;
@@ -202,6 +279,8 @@ const skyboxMaterial = createMaterialArray(skyboxImage, skyboxFileType);
 const skyboxGeometry = new THREE.BoxGeometry(100, 100, 100, 100, 100, 100);
 const skyboxMesh = new THREE.Mesh(skyboxGeometry, skyboxMaterial);
 scene.add(skyboxMesh);
+
+
 
 // Window resize
 window.addEventListener('resize', () => {
@@ -252,7 +331,7 @@ function tick() {
     // Door should be open between 0.28 and 0.6
     const inRoom = splinePos > 0.28 && splinePos < 0.9;
 
-    console.log(splinePos);
+    // console.log(splinePos);
 
     if (inRoom && !doorOpen) {
         doorOpenAction.timeScale = 1;
@@ -297,42 +376,42 @@ function tick() {
     camera.position.copy(pointOnPath);
 
     // Get tangent to align the base direction
-    const tangent = curvePath.curve.getTangentAt(t).normalize();
+    // const tangent = curvePath.curve.getTangentAt(t).normalize();
 
-    // Y-axis up vector
-    const up = new THREE.Vector3(0, 1, 0);
+    // // Y-axis up vector
+    // const up = new THREE.Vector3(0, 1, 0);
 
-    // Create base rotation to align with tangent
-    const baseQuat = new THREE.Quaternion().setFromUnitVectors(
-        new THREE.Vector3(0, 0, -1), // default forward
-        tangent
-    );
+    // // Create base rotation to align with tangent
+    // const baseQuat = new THREE.Quaternion().setFromUnitVectors(
+    //     new THREE.Vector3(0, 0, -1), // default forward
+    //     tangent
+    // );
 
-    // Update yaw/pitch with inertia
-    yaw += yawVelocity;
-    pitch += pitchVelocity;
+    // // Update yaw/pitch with inertia
+    // yaw += yawVelocity;
+    // pitch += pitchVelocity;
 
-    yawVelocity *= damping;
-    pitchVelocity *= damping;
+    // yawVelocity *= damping;
+    // pitchVelocity *= damping;
 
-    // Clamp pitch
-    const pitchLimit = Math.PI / 2 - 0.1;
-    pitch = THREE.MathUtils.clamp(pitch, -pitchLimit, pitchLimit);
+    // // Clamp pitch
+    // const pitchLimit = Math.PI / 2 - 0.1;
+    // pitch = THREE.MathUtils.clamp(pitch, -pitchLimit, pitchLimit);
 
-    // Build rotation around base forward direction
-    const tempObject = new THREE.Object3D();
-    tempObject.quaternion.copy(baseQuat);
+    // // Build rotation around base forward direction
+    // const tempObject = new THREE.Object3D();
+    // tempObject.quaternion.copy(baseQuat);
 
-    // Apply yaw (around world Y)
-    tempObject.rotateOnWorldAxis(up, yaw);
+    // // Apply yaw (around world Y)
+    // tempObject.rotateOnWorldAxis(up, yaw);
 
-    // Apply pitch (around local X)
-    tempObject.rotateX(pitch);
+    // // Apply pitch (around local X)
+    // tempObject.rotateX(pitch);
 
-    // Set camera to look in that direction
-    const direction = new THREE.Vector3(0, 0, 1).applyQuaternion(tempObject.quaternion);
-    cameraTarget.copy(camera.position).add(direction);
-    camera.lookAt(cameraTarget);
+    // // Set camera to look in that direction
+    // const direction = new THREE.Vector3(0, 0, 1).applyQuaternion(tempObject.quaternion);
+    // cameraTarget.copy(camera.position).add(direction);
+    // camera.lookAt(cameraTarget);
 
     renderer.render(scene, camera);
     window.requestAnimationFrame(tick);
@@ -340,7 +419,7 @@ function tick() {
     // controls.update();
 
     // Skybox anim
-    skyboxMesh.rotation.y += 0.0005;
+    skyboxMesh.rotation.y += 0.00005;
 
     // Post processing update
     composer.render();

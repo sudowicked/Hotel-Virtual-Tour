@@ -11,7 +11,7 @@ export default {
     },
     build:
     {
-        outDir: '../app',
+        outDir: '../Hotel-Tour-Demo',
         emptyOutDir: true,
         sourcemap: true,
         target: 'esnext' //browsers can handle the latest ES features

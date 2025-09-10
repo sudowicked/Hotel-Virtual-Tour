@@ -3,7 +3,7 @@ export let isScrolling = false;
 let scrollTimeout = null;
 let lastScrollTime = 0;
 let consecutiveScrolls = 1;
-let speedMultiplier = .5;
+let speedMultiplier = 5;
 let swipeStartY = 0;
 let swipeEndY = 0;
 const input = document.querySelector('.section');
@@ -31,7 +31,7 @@ export function handleScroll(event, positionAlongPathState) {
     positionAlongPathState.startingDistance = positionAlongPathState.currentDistanceOnPath;
 
     let changeInScroll = 0;
-    speedMultiplier = consecutiveScrolls * .5; // Base speed increase
+    speedMultiplier = consecutiveScrolls * .4; // Base speed increase
 
     isScrolling = true;
 
@@ -43,7 +43,7 @@ export function handleScroll(event, positionAlongPathState) {
             // console.log("Mouse", speedMultiplier);
         }
         else {
-            speedMultiplier *=.5;
+            speedMultiplier *=2;
             // console.log("Trackpad", speedMultiplier);
             // input.innerHTML = speedMultiplier;
         }
@@ -60,7 +60,7 @@ export function handleScroll(event, positionAlongPathState) {
             if (swipeEndY > swipeStartY)  {
                 changeInScroll = -Math.sign(swipeDistance);
             } // Detect direction of touch swipe (up/down) and move camera accordingly 
-            speedMultiplier *= 2;
+            speedMultiplier *= 5;
             // input.innerHTML = speedMultiplier;
         };
     };
@@ -97,7 +97,7 @@ export function handleTouchEnd() {
 export function updatePosition(curvePath, object, positionAlongPathState) {
 
     // Smoothing parameters
-    const smoothingFactor = 0.04;
+    const smoothingFactor = 0.02;
     const stopThreshold = 0.00001;
 
     // Calculate the distance to the target

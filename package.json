@@ -1,5 +1,5 @@
 {
-  "homepage": "https://github.com/sudowicked/app",
+  "homepage": "https://github.com/sudowicked/Hotel-Tour-Demo",
   "name": "threejsjourney",
   "version": "1.0.0",
   "description": "",
@@ -8,7 +8,7 @@
     "predeploy": "npm run build",
     "dev": "vite",
     "build": "vite build",
-    "deploy": "gh-pages -d app"
+    "deploy": "gh-pages -d Hotel-Tour-Demo"
   },
   "author": "",
   "license": "ISC",

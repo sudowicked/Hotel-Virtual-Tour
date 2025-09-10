@@ -119,9 +119,9 @@ function getParticleSystem(params) {
   sizeSpline.addPoint(1.5, 1.5);
   sizeSpline.addPoint(1.8, 1.8);
  // max point size = 511.8; => console.log(ctx.getParameter(ctx.ALIASED_POINT_SIZE_RANGE));
-  const radius = 0.09;
+  const radius = 0.1;
   const maxLife = 2;
-  const maxSize = .75;
+  const maxSize = .85;
   let gdfsghk = 0.0;
   function _AddParticles(timeElapsed) {
     gdfsghk += timeElapsed;
