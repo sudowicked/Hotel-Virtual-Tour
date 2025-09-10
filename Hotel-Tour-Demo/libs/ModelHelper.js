@@ -5,10 +5,12 @@ export let model = null;
 export let mixer = null;
 export let doorOpenAction, fanSpinAction1, fanSpinAction2, doorHandleAction = null;
 
-export const LoadGLTFByPath = (scene, startingModelPath) => {
+
+export const LoadGLTFByPath = (scene, startingModelPath, loadingManager) => {
     return new Promise((resolve, reject) => {
+      
       // Create a loader
-      const loader = new GLTFLoader();
+      const loader = new GLTFLoader(loadingManager);
   
       // Load the GLTF file
       loader.load(startingModelPath, (gltf) => {
@@ -34,6 +36,7 @@ export const LoadGLTFByPath = (scene, startingModelPath) => {
       }, undefined, (error) => {
         reject(error);
       });
+      
     });
 };
 
