@@ -166,7 +166,7 @@ videoTexture.minFilter = THREE.LinearFilter;
 videoTexture.magFilter = THREE.LinearFilter;
 videoTexture.format = THREE.RGBFormat;
 
-const lcd = model.children[37];
+const lcd = model.children[36];
 video.play();
 lcd.children[1].material = new THREE.MeshBasicMaterial({ map: videoTexture });
 
