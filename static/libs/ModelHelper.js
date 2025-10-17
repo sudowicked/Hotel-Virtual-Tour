@@ -15,7 +15,7 @@ export const LoadGLTFByPath = (scene, startingModelPath, loadingManager) => {
       
       // Draco loader
       const dracoLoader = new DRACOLoader(loadingManager);
-      dracoLoader.setDecoderPath("/draco/");
+      dracoLoader.setDecoderPath("./draco/");
 
       // GLTF loader
       const gltfLoader = new GLTFLoader(loadingManager);
