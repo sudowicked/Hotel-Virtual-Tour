@@ -8,16 +8,34 @@
 </head>
 <body>
     <div class="fullscreen-container">
+
         <canvas class="webgl"></canvas>
-        <section class="section">
+        <div class="logo">
             <a href="https://www.youtube.com/" class="social-btn" target="_blank">
-                <img src="/textures/Logo.png" width="180" height="160">
+                <img src="/textures/Logo.png">
             </a>
-        </section>
-        <script type="module" src="./hotel.js"></script>
+        </div>
+        <div class="loading-screen"></div>
+        <p class="progress-percentage">0</p>
+
+        <!-- <div class = "targetPoint point-0">
+            <div class = "label"> </div>
+        </div> -->
+<!-- 
+        <div class = "targetPoint point-1">
+            <div class = "label"> </div>
+        </div>
+
+        <div class = "targetPoint point-2">
+            <div class = "label"> </div>
+        </div>
+
+        <div class = "targetPoint point-3">
+            <div class = "label"> </div>
+        </div> -->
     </div>
-    <div class="loading-screen"></div>
-    <p class="progress-percentage">0</p>
+    
+    <script type="module" src="./hotel.js"></script>
 
     <video
         id="video"

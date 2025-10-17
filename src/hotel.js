@@ -1,15 +1,15 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/Addons.js';
-import { LoadGLTFByPath, getOBjectByName, mixer, doorOpenAction, fanSpinAction1, fanSpinAction2, doorHandleAction, model} from '../static/libs/ModelHelper';
+import { LoadGLTFByPath, targetObjects} from '../static/libs/ModelHelper';
 import { gsap } from 'gsap/gsap-core';
 import { loadCurveFromJSON} from '../static/libs/CurveMethods'
 import PositionAlongPathState from '../static/libs/positionAlongPathTools/PositionAlongPathState';
 import { handleScroll, updatePosition, isScrolling} from '../static/libs/positionAlongPathTools/PositionAlongPathMethods';
 import * as dat from 'lil-gui';
 import { setupRenderer } from '../static/libs/RendererHelper';
+import {getRootGroup, highlight, clearHover} from '../static/libs/TargetHelper';
 import { RenderPass } from 'three/examples/jsm/Addons.js';
 import { OutputPass } from 'three/examples/jsm/Addons.js';
-import { UnrealBloomPass } from 'three/examples/jsm/Addons.js';
 import { EffectComposer } from 'three/examples/jsm/Addons.js';
 import { RectAreaLightHelper } from 'three/examples/jsm/Addons.js';
 import { getParticleSystem } from '../static/libs/getParticleSystem';
@@ -18,44 +18,20 @@ import { getParticleSystem } from '../static/libs/getParticleSystem';
 const scene = new THREE.Scene();
 
 // Paths
-const hotelPath = './meshes/cyber/cyber.glb'
-const curvePathJSON = './meshes/cyber/cyberPath.json'
+const hotelPath = './meshes/lobby/Lobby_Compressed.glb'
+const curvePathJSON = './meshes/lobby/Lobby.json'
 
 const sizes = {
     width: window.innerWidth,
     height: window.innerHeight
 }
 
-// Mouse
-const mouse = new THREE.Vector2();
-
-let yaw = 0;
-let pitch = 0;
-let yawVelocity = 0;
-let pitchVelocity = 0;
-
-const rotationSpeed = 0.00002;
-const damping = 0.95; // lower = more inertia
-
-const cameraTarget = new THREE.Vector3();
-
-window.addEventListener('mousemove', (event) => {
-    const deltaX = event.movementX || 0;
-    const deltaY = event.movementY || 0;
-
-    // Inverted direction for orbit feel
-    yawVelocity += deltaX * rotationSpeed;
-    pitchVelocity -= deltaY * rotationSpeed;
-});
-
 
 // Renderer
 const canvas = document.querySelector('.webgl');
 const container = document.querySelector('.fullscreen-container');
 const renderer = setupRenderer();   
-let composer;
 
-renderer.setClearColor('#000000');
 
 /**
  * MAIN CODE
@@ -67,6 +43,8 @@ loadingScreenElement.classList.add("active"); // trigger animation
 const percentageElement = document.querySelector(".progress-percentage");
 percentageElement.classList.add("active");
 
+const hotelLogo = document.querySelector(".logo");
+
 let currentProgress = 0;  
 let targetProgress = 0; 
 
@@ -77,7 +55,6 @@ function animateProgress() {
     if(currentProgress <= 100) {
         requestAnimationFrame(animateProgress)
     }
-
 }
 
 const loadingManager = new THREE.LoadingManager(
@@ -91,9 +68,12 @@ const loadingManager = new THREE.LoadingManager(
             loadingScreenElement.classList.add("inactive");
             percentageElement.classList.remove("active");
             percentageElement.classList.add("inactive");
+
+            // Making hotel logo visible once everything is loaded
+            hotelLogo.classList.add("active");
             // gsap.to(loadingMaterial.uniforms.uAlpha, { duration: 3, value: 0});
         }
-        , 1500)
+        , 1500) 
         
     },
     // Progress
@@ -106,38 +86,9 @@ const loadingManager = new THREE.LoadingManager(
             percentageElement.classList.add("active");
             requestAnimationFrame(animateProgress);
         }
-        console.log(itemsLoaded);
+        // console.log(itemsLoaded);
     }
 );
-
-// Loading Screen
-const loadingGeometry = new THREE.PlaneGeometry(2, 2, 1, 1);
-const loadingMaterial = new THREE.ShaderMaterial(
-    {
-        transparent: true,
-        uniforms:
-        {
-            uAlpha: {value:1}
-        },
-        vertexShader: `
-            void main()
-            {
-                gl_Position = vec4(position, 1.0);
-            }
-                
-        `,
-        fragmentShader: `
-            uniform float uAlpha;
-
-            void main()
-            {
-                gl_FragColor = vec4(1.0, 0.0, 1.0, uAlpha); 
-            }
-        `
-    }
-);
-const loadingScreen = new THREE.Mesh(loadingGeometry, loadingMaterial);
-// scene.add(loadingScreen);
 
 // Meshes       
 await LoadGLTFByPath(scene, hotelPath, loadingManager);
@@ -145,54 +96,24 @@ await LoadGLTFByPath(scene, hotelPath, loadingManager);
 let curvePath = await loadCurveFromJSON(curvePathJSON);
 // scene.add(curvePath.mesh);
 
-// Fan spin animation
-function playAnim () {
-    fanSpinAction1.play();
-    fanSpinAction2.play();
-}
-playAnim();
-
 
 // CameraList
-const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, .1, 100);
+const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, .1, 1000);
 camera.position.copy(curvePath.curve.getPointAt(0));
 camera.lookAt(curvePath.curve.getPointAt(0.99));
 scene.add(camera);
 
 // TV video element
-let video = document.getElementById('video');
-let videoTexture = new THREE.VideoTexture(video);
-videoTexture.minFilter = THREE.LinearFilter;
-videoTexture.magFilter = THREE.LinearFilter;
-videoTexture.format = THREE.RGBFormat;
+// let video = document.getElementById('video');
+// let videoTexture = new THREE.VideoTexture(video);
+// videoTexture.minFilter = THREE.LinearFilter;
+// videoTexture.magFilter = THREE.LinearFilter;
+// videoTexture.format = THREE.RGBFormat;
 
-const lcd = model.children[36];
-video.play();
-lcd.children[1].material = new THREE.MeshBasicMaterial({ map: videoTexture });
+// const lcd = model.children[31];
+// video.play();
+// lcd.children[1].material = new THREE.MeshBasicMaterial({ map: videoTexture });
 
-
-const params = {
-    threshold: 0,
-    strength: .150,
-    radius: 0,
-    exposure: 1
-};
-
-const renderScene = new RenderPass( scene, camera );
-
-const bloomPass = new UnrealBloomPass( new THREE.Vector2( window.innerWidth, window.innerHeight ), 1.5, 0.4, 0.85 );
-bloomPass.threshold = params.threshold;
-bloomPass.strength = params.strength;
-bloomPass.radius = params.radius;
-
-const outputPass = new OutputPass();
-
-composer = new EffectComposer( renderer );
-composer.addPass( renderScene );
-composer.addPass( bloomPass );
-composer.addPass( outputPass );
-composer.renderTarget1.samples = 8;
-composer.renderTarget2.samples = 8;
 
 // PathState
 let positionAlongPathState = new PositionAlongPathState();
@@ -201,9 +122,9 @@ window.addEventListener('wheel', (event) => {
     handleScroll(event, positionAlongPathState);
 });
 
-window.addEventListener('touchstart', (event) => {
-    handleTouchStart(event);
-});
+// window.addEventListener('touchstart', (event) => {
+//     handleTouchStart(event);
+// });
 
 window.addEventListener('touchmove', (event) => {
     handleScroll(event, positionAlongPathState);
@@ -221,36 +142,16 @@ controls.enableDamping = true;
 // const gui = new dat.GUI();
 
 
-// const bloomFolder = gui.addFolder( 'bloom' );
-
-// bloomFolder.add( params, 'threshold', 0.0, 1.0 ).onChange( function ( value ) {
-
-//     bloomPass.threshold = Number( value );
-
-// } );
-
-// bloomFolder.add( params, 'strength', 0.0, 3.0 ).onChange( function ( value ) {
-
-//     bloomPass.strength = Number( value );
-
-// } );
-
-// gui.add( params, 'radius', 0.0, 1.0 ).step( 0.01 ).onChange( function ( value ) {
-
-//     bloomPass.radius = Number( value );
-
-// } );
-
 // Smoke particles
-const pipePosition = model.children[21].position;
+// const pipePosition = model.children[17].position;
 
-const smokeEffect = getParticleSystem({
-    camera,
-    emitter: new THREE.Vector3(pipePosition.x - .1, pipePosition.y + .36, pipePosition.z - .3),
-    parent: scene,
-    rate: 100,
-    texture: './textures/img/smoke.png',
-});
+// const smokeEffect = getParticleSystem({
+//     camera,
+//     emitter: new THREE.Vector3(pipePosition.x - .1, pipePosition.y + .36, pipePosition.z - .3),
+//     parent: scene,
+//     rate: 100,
+//     texture: './textures/img/smoke.png',
+// });
 
 // Create skybox
 function createPathStrings(filename, fileType) {
@@ -276,9 +177,61 @@ const skyboxImage = '/interstellar';
 const skyboxFileType = '.png';
 
 const skyboxMaterial = createMaterialArray(skyboxImage, skyboxFileType);
-const skyboxGeometry = new THREE.BoxGeometry(100, 100, 100, 100, 100, 100);
+const skyboxGeometry = new THREE.BoxGeometry(1000, 1000, 1000, 100, 100, 100);
 const skyboxMesh = new THREE.Mesh(skyboxGeometry, skyboxMaterial);
 scene.add(skyboxMesh);
+
+// Raycaster for hovering target objects
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+let hoveredTarget = null;
+
+function onPointerMove(event) {
+  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+  // Raycaster init
+  raycaster.setFromCamera(mouse, camera);
+  const intersects = raycaster.intersectObjects(targetObjects, true); // setting to true for recursive check for group meshes
+
+  if (intersects.length > 0) {
+    const hit = intersects[0].object;
+    const target = getRootGroup(hit, targetObjects);
+
+    if (hoveredTarget !== target) {
+      clearHover(hoveredTarget);
+      hoveredTarget = target;
+      highlight(target);
+      console.log('Hovered:', target.name);
+    }
+  } else {
+    hoveredTarget = clearHover(hoveredTarget);
+  }
+}
+
+
+window.addEventListener('pointermove', onPointerMove);
+console.log(targetObjects)
+
+// Target labels object
+const targetLabels = [
+    {
+        position: new THREE.Vector3(52.38, 16.27, 8.55),
+        element: document.querySelector('.point-0')
+    },
+    {
+        position: new THREE.Vector3(0.17, 14.2, -29.96), 
+        element: document.querySelector('.point-1')
+    },
+    {
+        position: new THREE.Vector3(-46.50, 8.6, 11.91),
+        element: document.querySelector('.point-2')
+    },
+    {
+        position: new THREE.Vector3(-30.24, 6.0, 44.7),
+        element: document.querySelector('.point-3')
+    }
+]
 
 
 
@@ -319,46 +272,42 @@ function tick() {
 
     // Updates
     updatePosition(curvePath, camera, positionAlongPathState);
-    smokeEffect.update(0.026);
+    // smokeEffect.update(0.026);
+    // controls.update();
+
+    // Get normalized t in [0, 1]
+    let t = positionAlongPathState.currentDistanceOnPath % 1;
+    if (t < 0) t += 1;
+
+    // Move camera along path
+    // const pointOnPath = curvePath.curve.getPointAt(t);
+    // camera.position.copy(pointOnPath);
+
+
+    // Track label to each target
+    for (const t of targetLabels) {
+        const screenPosition = t.position.clone();
+        //screenPosition.project(object);
+
+        const translateX = screenPosition.x * sizes.width * 0.5;
+        const translateY = - screenPosition.y * sizes.height * 0.5;
+
+        //t.element.style.transform = `translate(${translateX}px, ${translateY}px)`;
+ 
+    }
 
     // Animation update
-    if (mixer) mixer.update(deltaTime);
+    // if (mixer) mixer.update(deltaTime);
 
     // Get normalized splinePos in [0, 1]
     let splinePos = -(positionAlongPathState.currentDistanceOnPath % 1);
     if (splinePos < 0) splinePos += 1;
 
-    // Door should be open between 0.28 and 0.6
+    // Door should be open between 0.28 and 0.9
     const inRoom = splinePos > 0.28 && splinePos < 0.9;
 
     // console.log(splinePos);
 
-    if (inRoom && !doorOpen) {
-        doorOpenAction.timeScale = 1;
-        doorOpenAction.reset();
-        doorOpenAction.play();
-
-        doorHandleAction.timeScale = 1;
-        doorHandleAction.reset();
-        doorHandleAction.play();
-
-        doorOpen = true;
-    } else if (!inRoom && doorOpen) {
-        // Reset animation if doorOpen has finished playing
-        if (!doorOpenAction.isRunning()) {
-            doorOpenAction.reset();
-            doorOpenAction.time = 1.66; 
-        }
-        doorOpenAction.timeScale = -1;
-        doorOpenAction.play();
-
-        doorHandleAction.reset();
-        doorHandleAction.time = 1;
-        doorHandleAction.timeScale = -1;
-        doorHandleAction.play();
-
-        doorOpen = false;
-    }
 
 
     // const parallaxX = mouse.x * .1;
@@ -367,13 +316,7 @@ function tick() {
     // model.rotation.y += (parallaxX - model.rotation.y) * deltaTime;
     // model.rotation.z += (parallaxY - model.rotation.z) * deltaTime;
 
-    // Get normalized t in [0, 1]
-    let t = positionAlongPathState.currentDistanceOnPath % 1;
-    if (t < 0) t += 1;
 
-    // Move camera along path
-    const pointOnPath = curvePath.curve.getPointAt(t);
-    camera.position.copy(pointOnPath);
 
     // Get tangent to align the base direction
     // const tangent = curvePath.curve.getTangentAt(t).normalize();
@@ -416,12 +359,8 @@ function tick() {
     renderer.render(scene, camera);
     window.requestAnimationFrame(tick);
 
-    // controls.update();
 
     // Skybox anim
     skyboxMesh.rotation.y += 0.00005;
-
-    // Post processing update
-    composer.render();
 };
 tick();

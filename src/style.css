@@ -15,22 +15,44 @@ body {
     top: 0;
 }
 
-.section
+.logo
 {
-    align-items: center;
-    height: 100vh;
-    position: fixed;
-    font-family: 'Cabin', sans-serif;
-    color: #ffeded;
-    text-transform: uppercase;
-    font-size: 1vmin;
-    padding-left: 7%;
-    padding-right: 10%;
+    position: absolute;
+}
+
+.logo.active 
+{
+    opacity: 1;
 }
 
 img {
+    position: absolute;
+    width: 180px;
+    height: 160px;
+    left: 80px;
+    top: 20px;
     user-select: none;
     -webkit-user-drag: none;
+}
+
+@media (max-width: 768px) {
+    img {
+        width: 135px;
+        height: 120px;
+    }
+}
+
+@media (max-width: 480px) {
+    .logo {
+        top: 50%;
+        right: 50%;
+    }
+    img {
+        width: 124px;
+        height: 110px;
+        left: -62px;
+        top: -370px
+    }
 }
 
 .loading-screen 
@@ -82,4 +104,23 @@ img {
 {
     transition: opacity 0.45s ease;
     opacity: 0;
+}
+
+.targetPoint
+{
+    position: absolute;
+    top: 50%;
+    right: 50%;
+
+}
+
+.targetPoint .label 
+{
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    top: -7px;
+    left: -7px;
+    border-radius: 60%;
+    background-color: rgba(255, 255, 255, 0.582);
 }
